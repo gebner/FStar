@@ -1046,10 +1046,18 @@ let e_tref_nbe :
             else ());
            FStar_Pervasives_Native.None) in
     let uu___1 =
+      let term_t =
+        let uu___2 =
+          FStar_Syntax_Syntax.lid_as_fv
+            FStar_Parser_Const.fstar_syntax_syntax_term
+            FStar_Pervasives_Native.None in
+        mkFV uu___2 [] [] in
       let uu___2 =
         FStar_Syntax_Syntax.lid_as_fv FStar_Parser_Const.tref_lid
           FStar_Pervasives_Native.None in
-      mkFV uu___2 [] [] in
+      let uu___3 =
+        let uu___4 = FStar_TypeChecker_NBETerm.as_arg term_t in [uu___4] in
+      mkFV uu___2 [FStar_Syntax_Syntax.U_zero] uu___3 in
     let uu___2 =
       let uu___3 =
         let uu___4 =

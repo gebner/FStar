@@ -577,7 +577,9 @@ let e_tref_nbe #a =
   in
   { NBETerm.em = embed_tref
   ; NBETerm.un = unembed_tref
-  ; NBETerm.typ = mkFV (S.lid_as_fv PC.tref_lid None) [] []
+  ; NBETerm.typ =
+    (let term_t = mkFV (S.lid_as_fv PC.fstar_syntax_syntax_term None) [] [] in
+      mkFV (S.lid_as_fv PC.tref_lid None) [U_zero] [NBETerm.as_arg term_t])
   ; NBETerm.emb_typ = ET_app (PC.tref_lid |> Ident.string_of_lid, [ET_abstract]) }
 
 let e_guard_policy =
