@@ -85,6 +85,21 @@ val id_norm_cb : norm_cb
 exception Embedding_failure
 exception Unembedding_failure
 
+//
+// AR/NS: 04/22/2022:
+//        In the case of metaprograms, we reduce divergent terms in
+//        the normalizer, therefore, the final result that we get
+//        may be wrapped in a Meta_monadic node (e.g. lift, app, etc.)
+//        Before unembedding the result of such a computation,
+//          we strip those meta nodes
+//        In case the term inside is not a result, unembedding would
+//          anyway fail
+//        And we strip down only DIV
+//        Can we get any other effect? Not today, since from the client
+//          code, we enforce terms to be normalized to be PURE
+//
+val unmeta_div_results (t:term) : term
+
 val embedding (a:Type0) : Type0
 val emb_typ_of: embedding 'a -> emb_typ
 val term_as_fv: term -> fv //partial!

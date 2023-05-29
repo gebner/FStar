@@ -127,3 +127,5 @@ type unfold_side =
 type tot_or_ghost =
   | E_Total
   | E_Ghost
+
+type tref (a:Type) = ref a

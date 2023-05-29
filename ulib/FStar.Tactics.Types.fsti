@@ -70,3 +70,5 @@ type unfold_side =
 type tot_or_ghost =
   | E_Total
   | E_Ghost
+
+val tref (a:Type) : Type0

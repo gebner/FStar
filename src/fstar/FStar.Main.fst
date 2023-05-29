@@ -216,6 +216,7 @@ let lazy_chooser k i = match k with
     | FStar.Syntax.Syntax.Lazy_universe   -> FStar.Reflection.Embeddings.unfold_lazy_universe    i
     | FStar.Syntax.Syntax.Lazy_universe_uvar -> FStar.Syntax.Util.exp_string "((universe_uvar))"
     | FStar.Syntax.Syntax.Lazy_issue -> FStar.Syntax.Util.exp_string "((issue))"
+    | FStar.Syntax.Syntax.Lazy_tref -> FStar.Syntax.Util.exp_string "((tref))"
 
 // This is called directly by the Javascript port (it doesn't call Main)
 let setup_hooks () =

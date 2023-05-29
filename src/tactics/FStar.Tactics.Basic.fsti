@@ -36,6 +36,7 @@ module Range  = FStar.Compiler.Range
 module Z      = FStar.BigInt
 module TcComm = FStar.TypeChecker.Common
 module Core   = FStar.TypeChecker.Core
+module Types  = FStar.Tactics.Types
 
 (* Internal utilities *)
 val goal_typedness_deps : goal -> list ctx_uvar
@@ -122,7 +123,9 @@ val get_vconfig            : unit -> tac VConfig.vconfig
 val set_vconfig            : VConfig.vconfig -> tac unit
 val t_smt_sync             : VConfig.vconfig -> tac unit
 val free_uvars             : term -> tac (list Z.t)
-
+val alloc                  : 'a -> tac (tref 'a)
+val read                   : tref 'a -> tac 'a
+val write                  : tref 'a -> 'a -> tac unit
 
 (***** Callbacks for the meta DSL framework *****)
 let issues = list FStar.Errors.issue

@@ -2262,6 +2262,12 @@ let free_uvars (tm : term) : tac (list Z.t)
     let uvs = Syntax.Free.uvars_uncached tm |> BU.set_elements |> List.map (fun u -> Z.of_int_fs (UF.uvar_id u.ctx_uvar_head)) in
     ret uvs
 
+let alloc (x:'a) : tac (tref 'a) = ret (BU.mk_ref x)
+let read (r:tref 'a) : tac 'a = ret (!r)
+let write (r:tref 'a) (x:'a) : tac unit =
+  r := x;
+  ret ()
+
 (***** Builtins used in the meta DSL framework *****)
 
 let dbg_refl (g:env) (msg:unit -> string) =

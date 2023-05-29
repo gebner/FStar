@@ -452,6 +452,10 @@ a reflection primitive as it depends on the state of the UF graph. *)
 val free_uvars : term -> Tac (list int)
 
 
+val alloc (#a:Type) (x:a) : Tac (tref a)
+val read (#a:Type) (r:tref a) : Tac a
+val write (#a:Type) (r:tref a) (x:a) : Tac unit
+
 (***** APIs used in the meta DSL framework *****)
 
 (** Meta DSL framework is an experimental feature

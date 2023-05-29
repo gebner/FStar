@@ -595,6 +595,18 @@ let () =
         free_uvars RE.e_term (e_list e_int)
         free_uvars NRE.e_term (NBET.e_list NBET.e_int);
 
+      mk_tac_step_2 1 "alloc"
+        (fun _ -> alloc) e_any e_any (E.e_tref #S.term)
+        (fun _ -> alloc) NBET.e_any NBET.e_any (E.e_tref_nbe #NBET.t);
+      
+      mk_tac_step_2 1 "read"
+        (fun _ -> read) e_any (E.e_tref #S.term) e_any
+        (fun _ -> read) NBET.e_any (E.e_tref_nbe #NBET.t) NBET.e_any;
+      
+      mk_tac_step_3 1 "write"
+        (fun _ -> write) e_any (E.e_tref #S.term) e_any e_unit
+        (fun _ -> write) NBET.e_any (E.e_tref_nbe #NBET.t) NBET.e_any NBET.e_unit;
+
       // reflection typechecker callbacks (part of the DSL framework)
 
       mk_tac_step_3 0 "check_subtyping"
