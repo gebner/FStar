@@ -451,7 +451,11 @@ val t_smt_sync : vconfig -> Tac unit
 a reflection primitive as it depends on the state of the UF graph. *)
 val free_uvars : term -> Tac (list int)
 
-
+(** The following primitives provide support for local state
+    during execution of a tactic.
+    The local state is monotonic, it is not
+    reverted when the tactic backtracks (using catch e.g.)
+ *)
 val alloc (#a:Type) (x:a) : Tac (tref a)
 val read (#a:Type) (r:tref a) : Tac a
 val write (#a:Type) (r:tref a) (x:a) : Tac unit
