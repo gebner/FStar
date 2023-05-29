@@ -484,3 +484,4 @@ let (uu___is_E_Total : tot_or_ghost -> Prims.bool) =
   fun projectee -> match projectee with | E_Total -> true | uu___ -> false
 let (uu___is_E_Ghost : tot_or_ghost -> Prims.bool) =
   fun projectee -> match projectee with | E_Ghost -> true | uu___ -> false
+type 'a tref = 'a FStar_Compiler_Effect.ref

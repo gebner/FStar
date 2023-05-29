@@ -290,6 +290,8 @@ let (lazy_chooser :
           FStar_Syntax_Util.exp_string "((universe_uvar))"
       | FStar_Syntax_Syntax.Lazy_issue ->
           FStar_Syntax_Util.exp_string "((issue))"
+      | FStar_Syntax_Syntax.Lazy_tref ->
+          FStar_Syntax_Util.exp_string "((tref))"
 let (setup_hooks : unit -> unit) =
   fun uu___ ->
     FStar_Errors.set_parse_warn_error FStar_Parser_ParseIt.parse_warn_error;

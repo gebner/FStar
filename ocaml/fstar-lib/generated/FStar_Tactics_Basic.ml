@@ -7146,6 +7146,18 @@ let (free_uvars :
                        u.FStar_Syntax_Syntax.ctx_uvar_head in
                    FStar_BigInt.of_int_fs uu___2)) in
          FStar_Tactics_Monad.ret uvs)
+let alloc : 'a . 'a -> 'a FStar_Tactics_Types.tref FStar_Tactics_Monad.tac =
+  fun x ->
+    let uu___ = FStar_Compiler_Util.mk_ref x in FStar_Tactics_Monad.ret uu___
+let read : 'a . 'a FStar_Tactics_Types.tref -> 'a FStar_Tactics_Monad.tac =
+  fun r ->
+    let uu___ = FStar_Compiler_Effect.op_Bang r in
+    FStar_Tactics_Monad.ret uu___
+let write :
+  'a . 'a FStar_Tactics_Types.tref -> 'a -> unit FStar_Tactics_Monad.tac =
+  fun r ->
+    fun x ->
+      FStar_Compiler_Effect.op_Colon_Equals r x; FStar_Tactics_Monad.ret ()
 let (dbg_refl : env -> (unit -> Prims.string) -> unit) =
   fun g ->
     fun msg ->

@@ -180,6 +180,9 @@ let set_vconfig             = from_tac_1 B.set_vconfig
 let t_smt_sync              = from_tac_1 B.t_smt_sync
 let free_uvars              = from_tac_1 B.free_uvars
 
+let alloc (x:'a)             = from_tac_1 B.alloc x
+let read (r:'a tref)         = from_tac_1 B.read r
+let write (r:'a tref) (x:'a) = from_tac_2 B.write r x
 
 type ('env, 't0, 't1) subtyping_token = unit
 type ('env, 't0, 't1) equiv_token = unit
