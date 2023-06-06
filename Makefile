@@ -24,7 +24,7 @@ fstar:
 	@echo "  DUNE INSTALL"
 	$(Q)cd $(DUNE_SNAPSHOT) && dune install --profile=$(FSTAR_BUILD_PROFILE) --prefix=$(FSTAR_CURDIR)
 
-.PHONY: verify-ulin
+.PHONY: verify-ulib
 verify-ulib:
 	+$(Q)$(MAKE) -C ulib
 
@@ -134,8 +134,12 @@ output:
 
 .PHONY: ci
 ci:
-	+$(Q)$(MAKE) ci-pre
-	+$(Q)$(MAKE) ci-post
+	+$(Q)FSTAR_HOME=$(CURDIR) $(MAKE) ci-pre
+	+$(Q)FSTAR_HOME=$(CURDIR) $(MAKE) ci-post
+
+.PHONY: docker-ci
+docker-ci:
+	docker build -f .docker/standalone.Dockerfile --build-arg CI_THREADS=$(shell nproc) .
 
 .PHONY: ci-pre
 ci-pre:
