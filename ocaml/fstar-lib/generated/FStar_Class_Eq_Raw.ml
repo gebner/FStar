@@ -47,4 +47,5 @@ let eq_option : 'a . 'a deq -> 'a FStar_Pervasives_Native.option deq =
                 y) -> eq uu___ x y
              | (uu___1, uu___2) -> false)
     }
-let op_Equals : 'a . 'a deq -> 'a -> 'a -> Prims.bool = eq
+let op_Equals : 'a . 'a deq -> 'a -> 'a -> Prims.bool =
+  fun projectee -> match projectee with | { eq = eq1;_} -> eq1

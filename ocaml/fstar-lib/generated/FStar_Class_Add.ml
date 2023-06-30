@@ -11,7 +11,9 @@ let zero : 'a . 'a additive -> 'a =
 let plus : 'a . 'a additive -> 'a -> 'a -> 'a =
   fun projectee ->
     match projectee with | { zero = zero1; plus = plus1;_} -> plus1
-let op_Plus_Plus : 'a . 'a additive -> 'a -> 'a -> 'a = plus
+let op_Plus_Plus : 'a . 'a additive -> 'a -> 'a -> 'a =
+  fun projectee ->
+    match projectee with | { zero = zero1; plus = plus1;_} -> plus1
 let (add_int : Prims.int additive) = { zero = Prims.int_zero; plus = (+) }
 let (add_bool : Prims.bool additive) = { zero = false; plus = (||) }
 let add_list : 'a . unit -> 'a Prims.list additive =
