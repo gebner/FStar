@@ -21,8 +21,8 @@ class additive a = {
   plus       : a -> a -> a;
 }
 
-val (++) : #a:_ -> {| additive a |} -> a -> a -> a
-let (++) = plus
+unfold val (++) : #a:_ -> {| additive a |} -> a -> a -> a
+unfold let (++) = plus
 
 instance add_int : additive int = {
   zero = 0;

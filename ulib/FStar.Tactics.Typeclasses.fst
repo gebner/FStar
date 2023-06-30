@@ -212,7 +212,13 @@ let mk_class (nm:string) : Tac decls =
                   let lb = { lb_fv=sfv; lb_us=proj_lb.lb_us; lb_typ=ty; lb_def=def } in
                   let se = pack_sigelt (Sg_Let {isrec=false; lbs=[lb]}) in
                   let se = set_sigelt_quals to_propagate se in
-                  let se = set_sigelt_attrs b.attrs se in
+                  // We want to unfold this method during the intermediate normalization
+                  // pass between phase1 and phase2, but only if the dictionary argument
+                  // is concrete, hence the strict_on_arguments attribute.
+                  let se = set_sigelt_attrs ((`tcnorm) ::
+                                             (`strict_on_arguments [`#(pack (Tv_Const (C_Int (List.length params))))]) ::
+                                             b.attrs) se in
+
                   (* print ("trying to return : " ^ term_to_string (quote se)); *)
                   se
     ) (filter_no_method_binders bs)
