@@ -30,22 +30,21 @@ open FStar.Ident
 open FStar.Const
 open FStar.SMTEncoding
 open FStar.SMTEncoding.Util
-module S = FStar.Syntax.Syntax
-module SS = FStar.Syntax.Subst
-module N = FStar.TypeChecker.Normalize
-module BU = FStar.Compiler.Util
-module U = FStar.Syntax.Util
-module TcUtil = FStar.TypeChecker.Util
-module Const = FStar.Parser.Const
-module R  = FStar.Reflection.Basic
-module RD = FStar.Reflection.Data
-module EMB = FStar.Syntax.Embeddings
-module RE = FStar.Reflection.Embeddings
-module Env = FStar.TypeChecker.Env
-module SE = FStar.Syntax.Embeddings
 open FStar.SMTEncoding.Env
 
-module RC = FStar.Reflection.Constants
+module BU     = FStar.Compiler.Util
+module Const  = FStar.Parser.Const
+module EMB    = FStar.Syntax.Embeddings
+module Env    = FStar.TypeChecker.Env
+module N      = FStar.TypeChecker.Normalize
+module RC     = FStar.Reflection.V2.Constants
+module RE     = FStar.Reflection.V2.Embeddings
+module R      = FStar.Reflection.V2.Builtins
+module SE     = FStar.Syntax.Embeddings
+module S      = FStar.Syntax.Syntax
+module SS     = FStar.Syntax.Subst
+module TcUtil = FStar.TypeChecker.Util
+module U      = FStar.Syntax.Util
 
 (*---------------------------------------------------------------------------------*)
 (*  <Utilities> *)
@@ -330,6 +329,7 @@ let is_BitVector_primitive head args =
       || S.fv_eq_lid fv Const.bv_shift_left_lid
       || S.fv_eq_lid fv Const.bv_shift_right_lid
       || S.fv_eq_lid fv Const.bv_udiv_lid
+      || S.fv_eq_lid fv Const.bv_udiv_unsafe_lid
       || S.fv_eq_lid fv Const.bv_mod_lid
       || S.fv_eq_lid fv Const.bv_ult_lid
       || S.fv_eq_lid fv Const.bv_uext_lid
@@ -463,8 +463,25 @@ and encode_arith_term env head args_e =
     let sz = getInteger tm_sz.n in
     let sz_key = FStar.Compiler.Util.format1 "BitVector_%s" (string_of_int sz) in
     let sz_decls =
-      let t_decls = mkBvConstructor sz in
-      mk_decls "" sz_key t_decls []
+      let t_decls, constr_name, discriminator_name = mkBvConstructor sz in
+      //Typing inversion for bv_t n
+      let decls, typing_inversion =
+        (* forall (x:Term). HasType x (bv_t n) ==> is-BoxVec#n x *)
+        let bv_t_n, decls =
+          let head = S.lid_as_fv FStar.Parser.Const.bv_t_lid None in
+          let t = U.mk_app (S.fv_to_tm head) [tm_sz, None] in
+          encode_term t env
+        in
+        let xsym = mk_fv (varops.fresh env.current_module_name "x", Term_sort) in
+        let x = mkFreeV xsym in
+        let x_has_type_bv_t_n = mk_HasType x bv_t_n in
+        let ax = mkForall head.pos ([[x_has_type_bv_t_n]],
+                                    [xsym],
+                                    mkImp(x_has_type_bv_t_n, mkApp (discriminator_name, [x]))) in
+        let name = "typing_inversion_for_" ^constr_name in
+        decls, mkAssume(ax, Some name, name)
+      in
+      decls@mk_decls "" sz_key (t_decls@[typing_inversion]) []
     in
     (* we need to treat the size argument for zero_extend specially*)
     let arg_tms, ext_sz =
@@ -530,6 +547,8 @@ and encode_arith_term env head args_e =
          (Const.bv_shift_left_lid, bv_shl);
          (Const.bv_shift_right_lid, bv_shr);
          (Const.bv_udiv_lid, bv_udiv);
+         (* NOTE: unsafe 'udiv' also compiles to the same smtlib2 expr *)
+         (Const.bv_udiv_unsafe_lid, bv_udiv);
          (Const.bv_mod_lid, bv_mod);
          (Const.bv_mul_lid, bv_mul);
          (Const.bv_ult_lid, bv_ult);
@@ -678,7 +697,7 @@ and encode_term (t:typ) (env:env_t) : (term         (* encoding of t, expects t 
              let fsym = mk_fv (varops.fresh module_name "f", Term_sort) in
              let f = mkFreeV  fsym in
              let app = mk_Apply f vars in
-             let tcenv_bs = { Env.push_binders env.tcenv binders with lax=true } in
+             let tcenv_bs = { env'.tcenv with lax=true } in
              let pre_opt, res_t = TcUtil.pure_or_ghost_pre_and_post tcenv_bs res in
              let res_pred, decls' = encode_term_pred None res_t env' app in
              let guards, guard_decls = match pre_opt with
@@ -790,29 +809,70 @@ and encode_term (t:typ) (env:env_t) : (term         (* encoding of t, expects t 
                  ([], vars, mk_and_l (guards_l@[ct]@effect_args)) in
                let tkey_hash = "Non_total_Tm_arrow" ^ (hash_of_term tkey) ^ "@Effect=" ^
                  (c |> U.comp_effect_name |> string_of_lid) in
-               BU.digest_of_string tkey_hash in
+               BU.digest_of_string tkey_hash
+             in
 
              let tsym = "Non_total_Tm_arrow_" ^ tkey_hash in
-             let tdecl = Term.DeclFun(tsym, [], Term_sort, None) in
-             let t = mkApp(tsym, []) in
+             (* We need to compute all free variables of this arrow
+             expression and parametrize the encoding wrt to them. See
+             issue #3028 *)
+             let env0 = env in
+             let fstar_fvs, (env, fv_decls, fv_vars, fv_tms, fv_guards) =
+               let fvs = Free.names t0 |> BU.set_elements in
+
+               let getfreeV (t:term) : fv =
+                 match t.tm with
+                 | FreeV fv -> fv
+                 | _ -> failwith "Impossible: getfreeV: gen_term_var should always returns a FreeV"
+               in
+
+               fvs,
+               List.fold_left (fun (env, decls, vars, tms, guards) bv ->
+                   (* Get the sort from the environment, do not trust .sort field *)
+                   let (sort, _) = Env.lookup_bv env.tcenv bv in
+                   (* Generate a fresh SMT variable for this bv *)
+                   let sym, smt_tm, env = gen_term_var env bv in
+                   let fv = getfreeV smt_tm in
+                   (* Generate typing predicate for it at the sort type *)
+                   let guard, decls' = encode_term_pred None (norm env sort) env smt_tm in
+                   (env, decls'@decls, fv::vars, smt_tm::tms, guard::guards)
+               ) (env, [], [], [], []) fvs
+             in
+             (* Putting in "correct" order... but does it matter? *)
+             let fv_decls = List.rev fv_decls in
+             let fv_vars = List.rev fv_vars in
+             let fv_tms = List.rev fv_tms in
+             let fv_guards = List.rev fv_guards in
+
+             let arg_sorts = List.map (fun _ -> Term_sort) fv_tms in
+             let tdecl = Term.DeclFun(tsym, arg_sorts, Term_sort, None) in
+             let tapp = mkApp(tsym, fv_tms) in
              let t_kinding =
                 let a_name = "non_total_function_typing_" ^tsym in
-                Util.mkAssume(mk_HasType t mk_Term_type,
-                            Some "Typing for non-total arrows",
-                            a_name) in
-             let fsym = mk_fv ("f", Term_sort) in
-             let f = mkFreeV fsym in
-             let f_has_t = mk_HasType f t in
-             let t_interp =
-                 let a_name = "pre_typing_" ^tsym in
-                 Util.mkAssume(mkForall_fuel module_name t0.pos ([[f_has_t]],
-                                                                 [fsym],
-                                                                 mkImp(f_has_t,
-                                                                 mk_tester "Tm_arrow" (mk_PreType f))),
-                              Some a_name,
-                              a_name) in
+                let axiom =
+                  (* We generate:
+                     forall v1 .. vn, (v1 hasType t1 /\ ... vn hasType tn) ==> tapp hasType Type *)
+                  (* NB: we use the conlusion (HasType tapp Type) as the pattern. Though Z3
+                  will probably pick the same one if left empty. *)
+                  mkForall t0.pos ([[mk_HasType tapp mk_Term_type]], fv_vars,
+                    mkImp (mk_and_l fv_guards, mk_HasType tapp mk_Term_type))
+                in
+                (* We furthermore must close over any variable that is
+                still free in the axiom. This can happen since the types
+                of the fvs we are closing over above may not be closed
+                in the current env. *)
+                let svars = Term.free_variables axiom in
+                let axiom = mkForall t0.pos ([], svars, axiom) in
+                Util.mkAssume (axiom, Some "Typing for non-total arrows", a_name)
+             in
 
-             t, mk_decls tsym tkey_hash [tdecl; t_kinding; t_interp] []
+             (* The axiom above is generated over a universal quantification of
+             the free variables, but the actual encoding of this instance of the
+             arrow is applied to (the encoding of) the actual free variables at
+             this point. *)
+
+             let tapp_concrete = mkApp(tsym, List.map (lookup_term_var env0) fstar_fvs) in
+             tapp_concrete, fv_decls @ mk_decls tsym tkey_hash [tdecl ; t_kinding ] []
 
       | Tm_refine _ ->
         let x, f =
@@ -1123,9 +1183,20 @@ and encode_term (t:typ) (env:env_t) : (term         (* encoding of t, expects t 
       | Tm_abs {bs; body; rc_opt=lopt} ->
           let bs, body, opening = SS.open_term' bs body in
           let fallback () =
+            let arg_sorts, arg_terms =
+              (* We need to compute all free variables of this lambda
+              expression and parametrize the encoding wrt to them. See
+              issue #3028 *)
+              let fvs = Free.names t0 |> BU.set_elements in
+              let tms = List.map (lookup_term_var env) fvs in
+              (List.map (fun _ -> Term_sort) fvs <: list sort),
+              tms
+            in
             let f = varops.fresh env.current_module_name "Tm_abs" in
-            let decl = Term.DeclFun(f, [], Term_sort, Some "Imprecise function encoding") in
-            mkFreeV <| mk_fv (f, Term_sort), [decl] |> mk_decls_trivial
+            let decl = Term.DeclFun(f, arg_sorts, Term_sort, Some "Imprecise function encoding") in
+            let fv : term = mkFreeV <| mk_fv (f, Term_sort) in
+            let fapp = mkApp (f, arg_terms) in
+            fapp, [decl] |> mk_decls_trivial
           in
 
           let is_impure (rc:S.residual_comp) =
@@ -1502,8 +1573,8 @@ and encode_formula (phi:typ) (env:env_t) : (term * decls_t)  = (* expects phi to
               encode_formula phi env
 
             | Tm_fvar fv, [(r, _); (msg, _); (phi, _)] when S.fv_eq_lid fv Const.labeled_lid -> //interpret (labeled r msg t) as Tm_meta(t, Meta_labeled(msg, r, false)
-              begin match SE.unembed SE.e_range r false SE.id_norm_cb,
-                          SE.unembed SE.e_string msg false SE.id_norm_cb with
+              begin match SE.try_unembed SE.e_range r SE.id_norm_cb,
+                          SE.try_unembed SE.e_string msg SE.id_norm_cb with
               | Some r, Some s ->
                 let phi = S.mk (Tm_meta {tm=phi; meta=Meta_labeled(s, r, false)}) r in
                 fallback phi

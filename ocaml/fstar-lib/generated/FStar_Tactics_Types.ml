@@ -33,12 +33,15 @@ let (__proj__Mkgoal__item__label : goal -> Prims.string) =
 type guard_policy =
   | Goal 
   | SMT 
+  | SMTSync 
   | Force 
   | Drop 
 let (uu___is_Goal : guard_policy -> Prims.bool) =
   fun projectee -> match projectee with | Goal -> true | uu___ -> false
 let (uu___is_SMT : guard_policy -> Prims.bool) =
   fun projectee -> match projectee with | SMT -> true | uu___ -> false
+let (uu___is_SMTSync : guard_policy -> Prims.bool) =
+  fun projectee -> match projectee with | SMTSync -> true | uu___ -> false
 let (uu___is_Force : guard_policy -> Prims.bool) =
   fun projectee -> match projectee with | Force -> true | uu___ -> false
 let (uu___is_Drop : guard_policy -> Prims.bool) =
@@ -143,6 +146,8 @@ let (__proj__Mkproofstate__item__urgency : proofstate -> Prims.int) =
         psc; entry_range; guard_policy = guard_policy1; freshness;
         tac_verb_dbg; local_state; urgency;_} -> urgency
 let (goal_env : goal -> FStar_TypeChecker_Env.env) = fun g -> g.goal_main_env
+let (goal_range : goal -> FStar_Compiler_Range_Type.range) =
+  fun g -> (g.goal_main_env).FStar_TypeChecker_Env.range
 let (goal_witness : goal -> FStar_Syntax_Syntax.term) =
   fun g ->
     FStar_Syntax_Syntax.mk
@@ -151,6 +156,7 @@ let (goal_witness : goal -> FStar_Syntax_Syntax.term) =
       FStar_Compiler_Range_Type.dummyRange
 let (goal_type : goal -> FStar_Syntax_Syntax.term) =
   fun g -> FStar_Syntax_Util.ctx_uvar_typ g.goal_ctx_uvar
+let (goal_opts : goal -> FStar_Options.optionstate) = fun g -> g.opts
 let (goal_with_env : goal -> FStar_TypeChecker_Env.env -> goal) =
   fun g ->
     fun env ->
@@ -269,6 +275,10 @@ let (goal_of_implicit :
           FStar_TypeChecker_Env.nosynth = (env.FStar_TypeChecker_Env.nosynth);
           FStar_TypeChecker_Env.uvar_subtyping =
             (env.FStar_TypeChecker_Env.uvar_subtyping);
+          FStar_TypeChecker_Env.intactics =
+            (env.FStar_TypeChecker_Env.intactics);
+          FStar_TypeChecker_Env.nocoerce =
+            (env.FStar_TypeChecker_Env.nocoerce);
           FStar_TypeChecker_Env.tc_term = (env.FStar_TypeChecker_Env.tc_term);
           FStar_TypeChecker_Env.typeof_tot_or_gtot_term =
             (env.FStar_TypeChecker_Env.typeof_tot_or_gtot_term);
@@ -464,24 +474,9 @@ let (get_phi :
     FStar_Syntax_Util.un_squash uu___
 let (is_irrelevant : goal -> Prims.bool) =
   fun g -> let uu___ = get_phi g in FStar_Compiler_Option.isSome uu___
-type unfold_side =
-  | Left 
-  | Right 
-  | Both 
-  | Neither 
-let (uu___is_Left : unfold_side -> Prims.bool) =
-  fun projectee -> match projectee with | Left -> true | uu___ -> false
-let (uu___is_Right : unfold_side -> Prims.bool) =
-  fun projectee -> match projectee with | Right -> true | uu___ -> false
-let (uu___is_Both : unfold_side -> Prims.bool) =
-  fun projectee -> match projectee with | Both -> true | uu___ -> false
-let (uu___is_Neither : unfold_side -> Prims.bool) =
-  fun projectee -> match projectee with | Neither -> true | uu___ -> false
-type tot_or_ghost =
-  | E_Total 
-  | E_Ghost 
-let (uu___is_E_Total : tot_or_ghost -> Prims.bool) =
-  fun projectee -> match projectee with | E_Total -> true | uu___ -> false
-let (uu___is_E_Ghost : tot_or_ghost -> Prims.bool) =
-  fun projectee -> match projectee with | E_Ghost -> true | uu___ -> false
 type 'a tref = 'a FStar_Compiler_Effect.ref
+type ('g, 't) non_informative_token = unit
+type ('g, 't0, 't1) subtyping_token = unit
+type ('g, 't0, 't1) equiv_token = unit
+type ('g, 'e, 'c) typing_token = unit
+type ('g, 'sc, 't, 'pats) match_complete_token = unit

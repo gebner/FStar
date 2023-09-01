@@ -81,6 +81,7 @@ and flag =
   | IfDef
   | Macro
   | Deprecated of string
+  | CNoInline
 
 and fsdoc = string
 
@@ -347,6 +348,7 @@ let translate_flags flags =
     | Syntax.Private -> Some Private
     | Syntax.NoExtract -> Some WipeBody
     | Syntax.CInline -> Some CInline
+    | Syntax.CNoInline -> Some CNoInline
     | Syntax.Substitute -> Some Substitute
     | Syntax.GCType -> Some GCType
     | Syntax.Comment s -> Some (Comment s)
@@ -1094,7 +1096,7 @@ and translate_constant c: expr =
   | MLC_Char c ->
       let i = BU.int_of_char c in
       let s = BU.string_of_int i in
-      let c = EConstant (UInt32, s) in
+      let c = EConstant (CInt, s) in
       let char_of_int = EQualified (["FStar"; "Char"], "char_of_int") in
       EApp(char_of_int, [c])
   | MLC_Int (s, Some (sg, wd)) ->

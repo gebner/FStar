@@ -15,10 +15,10 @@
 *)
 module FStar.SMTEncoding.Encode
 open Prims
+open FStar
 open FStar.Pervasives
 open FStar.Compiler.Effect
 open FStar.Compiler.List
-open FStar
 open FStar.Compiler
 open FStar.TypeChecker.Env
 open FStar.Syntax
@@ -29,23 +29,18 @@ open FStar.Ident
 open FStar.Const
 open FStar.SMTEncoding
 open FStar.SMTEncoding.Util
-module S = FStar.Syntax.Syntax
-module SS = FStar.Syntax.Subst
-module UF = FStar.Syntax.Unionfind
-module N = FStar.TypeChecker.Normalize
-module BU = FStar.Compiler.Util
-module U = FStar.Syntax.Util
-module TcUtil = FStar.TypeChecker.Util
-module Const = FStar.Parser.Const
-module R  = FStar.Reflection.Basic
-module RD = FStar.Reflection.Data
-module EMB = FStar.Syntax.Embeddings
-module RE = FStar.Reflection.Embeddings
 open FStar.SMTEncoding.Env
 open FStar.SMTEncoding.EncodeTerm
-open FStar.Parser
 
-module Env = FStar.TypeChecker.Env
+module BU     = FStar.Compiler.Util
+module Const  = FStar.Parser.Const
+module Env    = FStar.TypeChecker.Env
+module N      = FStar.TypeChecker.Normalize
+module S      = FStar.Syntax.Syntax
+module SS     = FStar.Syntax.Subst
+module TcUtil = FStar.TypeChecker.Util
+module UF     = FStar.Syntax.Unionfind
+module U      = FStar.Syntax.Util
 
 let norm_before_encoding env t =
     let steps = [Env.Eager_unfolding;
@@ -1295,8 +1290,7 @@ and encode_sigelt' (env:env_t) (se:sigelt) : (decls_t * env_t) =
         let is_logical = quals |> BU.for_some (function Logic | Assumption -> true | _ -> false) in
         let constructor_or_logic_type_decl (c:constructor_t) =
             if is_logical
-            then let name, args, _, _, _ = c in
-                 [Term.DeclFun(name, args |> List.map (fun (_, sort, _) -> sort), Term_sort, None)]
+            then [Term.DeclFun(c.constr_name, c.constr_fields |> List.map (fun f -> f.field_sort), Term_sort, None)]
             else constructor_to_decl (Ident.range_of_lid t) c in
         let inversion_axioms env tapp vars =
             if datas |> BU.for_some (fun l -> Env.try_lookup_lid env.tcenv l |> Option.isNone) //Q: Why would this happen?
@@ -1352,12 +1346,13 @@ and encode_sigelt' (env:env_t) (se:sigelt) : (decls_t * env_t) =
             //See: https://github.com/FStarLang/FStar/issues/349
             let tname_decl =
                 constructor_or_logic_type_decl
-                    (tname,
-                     vars |> List.map (fun fv -> (tname^fv_name fv, fv_sort fv,false)),
-                     //The false above is extremely important; it makes sure that type-formers are not injective
-                     Term_sort,
-                     varops.next_id(),
-                     false)
+                  {
+                    constr_name = tname;
+                    constr_fields = vars |> List.map (fun fv -> {field_name=tname^fv_name fv; field_sort=fv_sort fv; field_projectible=false}) ;
+                    //The field_projectible=false above is extremely important; it makes sure that type-formers are not injective
+                    constr_sort=Term_sort;
+                    constr_id=Some (varops.next_id())
+                  }
             in
             let tok_decls, env =
                 match vars with
@@ -1409,14 +1404,16 @@ and encode_sigelt' (env:env_t) (se:sigelt) : (decls_t * env_t) =
         let s_fuel_tm = mkApp("SFuel", [fuel_tm]) in
         let vars, guards, env', binder_decls, names = encode_binders (Some fuel_tm) formals env in
         let fields = names |> List.mapi (fun n x ->
-            let projectible = true in
-//            let projectible = n >= n_tps in //Note: the type parameters are not projectible,
-                                            //i.e., (MkTuple2 int bool 0 false) is only injective in its last two arguments
-                                            //This allows the term to both have type (int * bool)
-                                            //as well as (nat * bool), without leading us to conclude that int=nat
-                                            //Also see https://github.com/FStarLang/FStar/issues/349
-            mk_term_projector_name d x, Term_sort, projectible) in
-        let datacons = (ddconstrsym, fields, Term_sort, varops.next_id(), true) |> Term.constructor_to_decl (Ident.range_of_lid d) in
+            { field_name=mk_term_projector_name d x;
+              field_sort=Term_sort;
+              field_projectible=true })
+        in
+        let datacons = 
+          {constr_name=ddconstrsym;
+           constr_fields=fields;
+           constr_sort=Term_sort;
+           constr_id=Some (varops.next_id())
+           } |> Term.constructor_to_decl (Ident.range_of_lid d) in
         let app = mk_Apply ddtok_tm vars in
         let guard = mk_and_l guards in
         let xvars = List.map mkFreeV vars in
@@ -1522,6 +1519,22 @@ and encode_sigelt' (env:env_t) (se:sigelt) : (decls_t * env_t) =
               let codomain_ordering, codomain_decls =
                 let _, formals' = BU.first_N n_tps formals in (* no codomain ordering for the parameters *)
                 let _, vars' = BU.first_N n_tps vars in
+                let norm t = 
+                   N.unfold_whnf' [Env.AllowUnboundUniverses;
+                                   Env.EraseUniverses;
+                                   Env.Unascribe;
+                                   //we don't know if this will terminate; so don't do recursive steps
+                                   Env.Exclude Env.Zeta]
+                                  env'.tcenv
+                                  t                
+                in
+                let warn_compat () =
+                  FStar.Errors.log_issue
+                    (S.range_of_fv fv)
+                    (FStar.Errors.Warning_DeprecatedGeneric,
+                    "Using 'compat:2954' to use a permissive encoding of the subterm ordering on the codomain of a constructor.\n\
+                     This is deprecated and will be removed in a future version of F*.")
+                in
                 let codomain_prec_l, cod_decls =
                   List.fold_left2
                     (fun (codomain_prec_l, cod_decls) formal var ->
@@ -1539,20 +1552,27 @@ and encode_sigelt' (env:env_t) (se:sigelt) : (decls_t * env_t) =
                                 then None //not useful for lemmas
                                 else
                                   let t = U.unrefine (U.comp_result c) in
+                                  let t = norm t in
                                   if is_type t || U.is_sub_singleton t
                                   then None //ordering on Type and squashed values is not useful
-                                  else Some (bs, c)
+                                  else (
+                                    let head, _ = U.head_and_args_full t in
+                                    match (U.un_uinst head).n with
+                                    | Tm_fvar fv ->
+                                      if BU.for_some (S.fv_eq_lid fv) mutuals
+                                      then Some (bs, c)
+                                      else if Options.ext_getv "compat:2954" <> ""
+                                      then (warn_compat(); Some (bs, c)) //compatibility mode
+                                      else None
+                                    | _ ->
+                                      if Options.ext_getv "compat:2954" <> ""
+                                      then (warn_compat(); Some (bs, c)) //compatibility mode
+                                      else None
+                                  )
                               end
                             | _ ->
                               let head, _ = U.head_and_args t in
-                              let t' = N.unfold_whnf' [Env.AllowUnboundUniverses;
-                                                       Env.EraseUniverses;
-                                                       Env.Unascribe;
-                                                       //we don't know if this will terminate; so don't do recursive steps
-                                                       Env.Exclude Env.Zeta]
-                                                       env'.tcenv
-                                                       t
-                              in
+                              let t' = norm t in
                               let head', _ = U.head_and_args t' in
                               match U.eq_tm head head' with
                               | U.Equal -> None //no progress after whnf
@@ -1572,7 +1592,8 @@ and encode_sigelt' (env:env_t) (se:sigelt) : (decls_t * env_t) =
 
                         in
                         match binder_and_codomain_type formal.binder_bv.sort with
-                        | None -> codomain_prec_l, cod_decls
+                        | None -> 
+                          codomain_prec_l, cod_decls
                         | Some (bs, c) ->
                           //var bs << D ... var ...
                           let bs', guards', _env', bs_decls, _ = encode_binders None bs env' in
@@ -1792,7 +1813,6 @@ let rollback_env depth = FStar.Common.rollback pop_env last_env depth
 
 let init tcenv =
     init_env tcenv;
-    Z3.init ();
     Z3.giveZ3 [DefPrelude]
 let snapshot msg = BU.atomically (fun () ->
     let env_depth, () = snapshot_env () in
@@ -1913,7 +1933,7 @@ let encode_modul_from_cache tcenv tcmod (decls, fvbs) =
     if Env.debug tcenv Options.Medium then BU.print1 "Done encoding externals from cache for %s\n" name
 
 open FStar.SMTEncoding.Z3
-let encode_query use_env_msg tcenv q
+let encode_query use_env_msg (tcenv:Env.env) (q:S.term)
   : list decl  //prelude, translation of  tcenv
   * list ErrorReporting.label //labels in the query
   * decl        //the query itself
@@ -1950,7 +1970,8 @@ let encode_query use_env_msg tcenv q
     let label_prefix, label_suffix = encode_labels labels in
     let caption =
         if Options.log_queries ()
-        then [Caption ("Encoding query formula : " ^ (Print.term_to_string q))]
+        then [Caption ("Encoding query formula : " ^ (Print.term_to_string q));
+              Caption ("Context: " ^ String.concat "\n" (Errors.get_ctx ()))]
         else []
     in
     let query_prelude =

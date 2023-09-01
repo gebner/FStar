@@ -361,6 +361,7 @@ and unresolved_constructor =
   uc_fields: FStar_Ident.lident Prims.list }
 and subst_elt =
   | DB of (Prims.int * bv) 
+  | DT of (Prims.int * term' syntax) 
   | NM of (bv * Prims.int) 
   | NT of (bv * term' syntax) 
   | UN of (Prims.int * universe) 
@@ -400,6 +401,7 @@ and lazyinfo =
 and lazy_kind =
   | BadLazy 
   | Lazy_bv 
+  | Lazy_namedv 
   | Lazy_binder 
   | Lazy_optionstate 
   | Lazy_fvar 
@@ -414,6 +416,7 @@ and lazy_kind =
   | Lazy_universe 
   | Lazy_universe_uvar 
   | Lazy_issue 
+  | Lazy_ident 
   | Lazy_tref 
 and binding =
   | Binding_var of bv 
@@ -926,6 +929,10 @@ let (uu___is_DB : subst_elt -> Prims.bool) =
   fun projectee -> match projectee with | DB _0 -> true | uu___ -> false
 let (__proj__DB__item___0 : subst_elt -> (Prims.int * bv)) =
   fun projectee -> match projectee with | DB _0 -> _0
+let (uu___is_DT : subst_elt -> Prims.bool) =
+  fun projectee -> match projectee with | DT _0 -> true | uu___ -> false
+let (__proj__DT__item___0 : subst_elt -> (Prims.int * term' syntax)) =
+  fun projectee -> match projectee with | DT _0 -> _0
 let (uu___is_NM : subst_elt -> Prims.bool) =
   fun projectee -> match projectee with | NM _0 -> true | uu___ -> false
 let (__proj__NM__item___0 : subst_elt -> (bv * Prims.int)) =
@@ -1023,6 +1030,9 @@ let (uu___is_BadLazy : lazy_kind -> Prims.bool) =
   fun projectee -> match projectee with | BadLazy -> true | uu___ -> false
 let (uu___is_Lazy_bv : lazy_kind -> Prims.bool) =
   fun projectee -> match projectee with | Lazy_bv -> true | uu___ -> false
+let (uu___is_Lazy_namedv : lazy_kind -> Prims.bool) =
+  fun projectee ->
+    match projectee with | Lazy_namedv -> true | uu___ -> false
 let (uu___is_Lazy_binder : lazy_kind -> Prims.bool) =
   fun projectee ->
     match projectee with | Lazy_binder -> true | uu___ -> false
@@ -1062,6 +1072,8 @@ let (uu___is_Lazy_universe_uvar : lazy_kind -> Prims.bool) =
     match projectee with | Lazy_universe_uvar -> true | uu___ -> false
 let (uu___is_Lazy_issue : lazy_kind -> Prims.bool) =
   fun projectee -> match projectee with | Lazy_issue -> true | uu___ -> false
+let (uu___is_Lazy_ident : lazy_kind -> Prims.bool) =
+  fun projectee -> match projectee with | Lazy_ident -> true | uu___ -> false
 let (uu___is_Lazy_tref : lazy_kind -> Prims.bool) =
   fun projectee -> match projectee with | Lazy_tref -> true | uu___ -> false
 let (uu___is_Binding_var : binding -> Prims.bool) =
@@ -1477,17 +1489,20 @@ type layered_eff_combinators =
   l_if_then_else:
     (tscheme * tscheme * indexed_effect_combinator_kind
       FStar_Pervasives_Native.option)
-    }
+    ;
+  l_close: (tscheme * tscheme) FStar_Pervasives_Native.option }
 let (__proj__Mklayered_eff_combinators__item__l_repr :
   layered_eff_combinators -> (tscheme * tscheme)) =
   fun projectee ->
     match projectee with
-    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else;_} -> l_repr
+    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else; l_close;_} ->
+        l_repr
 let (__proj__Mklayered_eff_combinators__item__l_return :
   layered_eff_combinators -> (tscheme * tscheme)) =
   fun projectee ->
     match projectee with
-    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else;_} -> l_return
+    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else; l_close;_} ->
+        l_return
 let (__proj__Mklayered_eff_combinators__item__l_bind :
   layered_eff_combinators ->
     (tscheme * tscheme * indexed_effect_combinator_kind
@@ -1495,7 +1510,8 @@ let (__proj__Mklayered_eff_combinators__item__l_bind :
   =
   fun projectee ->
     match projectee with
-    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else;_} -> l_bind
+    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else; l_close;_} ->
+        l_bind
 let (__proj__Mklayered_eff_combinators__item__l_subcomp :
   layered_eff_combinators ->
     (tscheme * tscheme * indexed_effect_combinator_kind
@@ -1503,7 +1519,8 @@ let (__proj__Mklayered_eff_combinators__item__l_subcomp :
   =
   fun projectee ->
     match projectee with
-    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else;_} -> l_subcomp
+    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else; l_close;_} ->
+        l_subcomp
 let (__proj__Mklayered_eff_combinators__item__l_if_then_else :
   layered_eff_combinators ->
     (tscheme * tscheme * indexed_effect_combinator_kind
@@ -1511,8 +1528,16 @@ let (__proj__Mklayered_eff_combinators__item__l_if_then_else :
   =
   fun projectee ->
     match projectee with
-    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else;_} ->
+    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else; l_close;_} ->
         l_if_then_else
+let (__proj__Mklayered_eff_combinators__item__l_close :
+  layered_eff_combinators ->
+    (tscheme * tscheme) FStar_Pervasives_Native.option)
+  =
+  fun projectee ->
+    match projectee with
+    | { l_repr; l_return; l_bind; l_subcomp; l_if_then_else; l_close;_} ->
+        l_close
 type eff_combinators =
   | Primitive_eff of wp_eff_combinators 
   | DM4F_eff of wp_eff_combinators 
@@ -1644,6 +1669,17 @@ let (__proj__Mksig_metadata__item__sigmeta_admit :
     match projectee with
     | { sigmeta_active; sigmeta_fact_db_ids; sigmeta_admit;_} ->
         sigmeta_admit
+type open_kind =
+  | Open_module 
+  | Open_namespace 
+let (uu___is_Open_module : open_kind -> Prims.bool) =
+  fun projectee ->
+    match projectee with | Open_module -> true | uu___ -> false
+let (uu___is_Open_namespace : open_kind -> Prims.bool) =
+  fun projectee ->
+    match projectee with | Open_namespace -> true | uu___ -> false
+type open_module_or_namespace = (FStar_Ident.lident * open_kind)
+type module_abbrev = (FStar_Ident.ident * FStar_Ident.lident)
 type sigelt'__Sig_inductive_typ__payload =
   {
   lid: FStar_Ident.lident ;
@@ -1733,6 +1769,10 @@ and sigelt =
   sigquals: qualifier Prims.list ;
   sigmeta: sig_metadata ;
   sigattrs: attribute Prims.list ;
+  sigopens_and_abbrevs:
+    (open_module_or_namespace, module_abbrev) FStar_Pervasives.either
+      Prims.list
+    ;
   sigopts: FStar_VConfig.vconfig FStar_Pervasives_Native.option }
 let (__proj__Mksigelt'__Sig_inductive_typ__payload__item__lid :
   sigelt'__Sig_inductive_typ__payload -> FStar_Ident.lident) =
@@ -2039,29 +2079,44 @@ let (__proj__Sig_fail__item___0 : sigelt' -> sigelt'__Sig_fail__payload) =
 let (__proj__Mksigelt__item__sigel : sigelt -> sigelt') =
   fun projectee ->
     match projectee with
-    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopts;_} -> sigel
+    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopens_and_abbrevs;
+        sigopts;_} -> sigel
 let (__proj__Mksigelt__item__sigrng :
   sigelt -> FStar_Compiler_Range_Type.range) =
   fun projectee ->
     match projectee with
-    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopts;_} -> sigrng
+    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopens_and_abbrevs;
+        sigopts;_} -> sigrng
 let (__proj__Mksigelt__item__sigquals : sigelt -> qualifier Prims.list) =
   fun projectee ->
     match projectee with
-    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopts;_} -> sigquals
+    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopens_and_abbrevs;
+        sigopts;_} -> sigquals
 let (__proj__Mksigelt__item__sigmeta : sigelt -> sig_metadata) =
   fun projectee ->
     match projectee with
-    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopts;_} -> sigmeta
+    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopens_and_abbrevs;
+        sigopts;_} -> sigmeta
 let (__proj__Mksigelt__item__sigattrs : sigelt -> attribute Prims.list) =
   fun projectee ->
     match projectee with
-    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopts;_} -> sigattrs
+    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopens_and_abbrevs;
+        sigopts;_} -> sigattrs
+let (__proj__Mksigelt__item__sigopens_and_abbrevs :
+  sigelt ->
+    (open_module_or_namespace, module_abbrev) FStar_Pervasives.either
+      Prims.list)
+  =
+  fun projectee ->
+    match projectee with
+    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopens_and_abbrevs;
+        sigopts;_} -> sigopens_and_abbrevs
 let (__proj__Mksigelt__item__sigopts :
   sigelt -> FStar_VConfig.vconfig FStar_Pervasives_Native.option) =
   fun projectee ->
     match projectee with
-    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopts;_} -> sigopts
+    | { sigel; sigrng; sigquals; sigmeta; sigattrs; sigopens_and_abbrevs;
+        sigopts;_} -> sigopts
 type sigelts = sigelt Prims.list
 type modul =
   {
@@ -2164,15 +2219,6 @@ let (order_univ_name : univ_name -> univ_name -> Prims.int) =
       FStar_String.compare uu___ uu___1
 let (new_universe_names_set : unit -> univ_name FStar_Compiler_Util.set) =
   fun uu___ -> FStar_Compiler_Util.new_set order_univ_name
-let (eq_binding : binding -> binding -> Prims.bool) =
-  fun b1 ->
-    fun b2 ->
-      match (b1, b2) with
-      | (Binding_var bv1, Binding_var bv2) -> bv_eq bv1 bv2
-      | (Binding_lid (lid1, uu___), Binding_lid (lid2, uu___1)) ->
-          FStar_Ident.lid_equals lid1 lid2
-      | (Binding_univ u1, Binding_univ u2) -> FStar_Ident.ident_equals u1 u2
-      | uu___ -> false
 type path = Prims.string Prims.list
 type subst_t = subst_elt Prims.list
 let (no_names : freenames) = new_bv_set ()
@@ -2272,6 +2318,7 @@ let (mk_sigelt : sigelt' -> sigelt) =
       sigquals = [];
       sigmeta = default_sigmeta;
       sigattrs = [];
+      sigopens_and_abbrevs = [];
       sigopts = FStar_Pervasives_Native.None
     }
 let (mk_subst : subst_t -> subst_t) = fun s -> s
@@ -2600,6 +2647,7 @@ let (t_real : term) = tconst FStar_Parser_Const.real_lid
 let (t_float : term) = tconst FStar_Parser_Const.float_lid
 let (t_char : term) = tabbrev FStar_Parser_Const.char_lid
 let (t_range : term) = tconst FStar_Parser_Const.range_lid
+let (t___range : term) = tconst FStar_Parser_Const.__range_lid
 let (t_vconfig : term) = tconst FStar_Parser_Const.vconfig_lid
 let (t_term : term) = tconst FStar_Parser_Const.term_lid
 let (t_term_view : term) = tabbrev FStar_Parser_Const.term_view_lid

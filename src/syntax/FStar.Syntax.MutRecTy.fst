@@ -45,9 +45,19 @@ let disentangle_abbrevs_from_bundle
     (rng:   FStar.Compiler.Range.range)
     : sigelt * list sigelt =
 
-   (* JP: not the best strategy... TODO think about how we want to merge
-    * attributes in this case. *)
-   let sigattrs = List.collect (fun s -> s.sigattrs) sigelts in
+   (* NS: Attributes on the type constructors and abbreviation are gathered,
+          and placed on the bundle.
+          Attributes on the data constructors do not propagate to the bundle. *)
+   let sigattrs =
+        List.collect 
+        (fun s ->
+            match s.sigel with
+            | Sig_inductive_typ _
+            | Sig_let _ -> s.sigattrs
+            | _ -> [])
+        sigelts
+   in
+   let sigattrs = FStar.Syntax.Util.deduplicate_terms sigattrs in
 
     (* Gather the list of type abbrevs *)
    let type_abbrev_sigelts = sigelts |> List.collect begin fun x -> match x.sigel with
@@ -66,7 +76,8 @@ let disentangle_abbrevs_from_bundle
        sigquals = quals;
        sigmeta = default_sigmeta;
        sigattrs = sigattrs;
-       sigopts = None; }, []
+       sigopts = None;
+       sigopens_and_abbrevs = [] }, []
    | _ ->
 
     let type_abbrevs = type_abbrev_sigelts |> List.map begin fun x -> match x.sigel with
@@ -223,7 +234,8 @@ let disentangle_abbrevs_from_bundle
                          sigquals = quals;
                          sigmeta = default_sigmeta;
                          sigattrs = sigattrs;
-                         sigopts = None; }
+                         sigopts = None;
+                         sigopens_and_abbrevs = [] }
       in
 
       (new_bundle, unfolded_type_abbrevs)

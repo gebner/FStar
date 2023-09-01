@@ -278,6 +278,8 @@ and env =
   failhard: Prims.bool ;
   nosynth: Prims.bool ;
   uvar_subtyping: Prims.bool ;
+  intactics: Prims.bool ;
+  nocoerce: Prims.bool ;
   tc_term:
     env ->
       FStar_Syntax_Syntax.term ->
@@ -304,8 +306,8 @@ and env =
   subtype_nosmt_force:
     env -> FStar_Syntax_Syntax.term -> FStar_Syntax_Syntax.term -> Prims.bool ;
   qtbl_name_and_index:
-    (Prims.int FStar_Compiler_Util.smap * (FStar_Ident.lident * Prims.int)
-      FStar_Pervasives_Native.option)
+    ((FStar_Ident.lident * FStar_Syntax_Syntax.typ * Prims.int)
+      FStar_Pervasives_Native.option * Prims.int FStar_Compiler_Util.smap)
     ;
   normalized_eff_names: FStar_Ident.lident FStar_Compiler_Util.smap ;
   fv_delta_depths: FStar_Syntax_Syntax.delta_depth FStar_Compiler_Util.smap ;
@@ -485,7 +487,7 @@ let (__proj__Mkenv__item__solver : env -> solver_t) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -499,7 +501,7 @@ let (__proj__Mkenv__item__range : env -> FStar_Compiler_Range_Type.range) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -513,7 +515,7 @@ let (__proj__Mkenv__item__curmodule : env -> FStar_Ident.lident) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -529,7 +531,7 @@ let (__proj__Mkenv__item__gamma :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -543,7 +545,7 @@ let (__proj__Mkenv__item__gamma_sig : env -> sig_binding Prims.list) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -559,7 +561,7 @@ let (__proj__Mkenv__item__gamma_cache :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -575,7 +577,7 @@ let (__proj__Mkenv__item__modules :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -592,7 +594,7 @@ let (__proj__Mkenv__item__expected_typ :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -608,7 +610,7 @@ let (__proj__Mkenv__item__sigtab :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -623,7 +625,7 @@ let (__proj__Mkenv__item__attrtab :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -637,7 +639,7 @@ let (__proj__Mkenv__item__instantiate_imp : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -652,7 +654,7 @@ let (__proj__Mkenv__item__effects : env -> effects) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -666,7 +668,7 @@ let (__proj__Mkenv__item__generalize : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -685,7 +687,7 @@ let (__proj__Mkenv__item__letrecs :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -699,7 +701,7 @@ let (__proj__Mkenv__item__top_level : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -714,7 +716,7 @@ let (__proj__Mkenv__item__check_uvars : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -729,7 +731,7 @@ let (__proj__Mkenv__item__use_eq_strict : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -744,7 +746,7 @@ let (__proj__Mkenv__item__is_iface : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -758,7 +760,7 @@ let (__proj__Mkenv__item__admit : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -772,7 +774,7 @@ let (__proj__Mkenv__item__lax : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -786,7 +788,7 @@ let (__proj__Mkenv__item__lax_universes : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -801,7 +803,7 @@ let (__proj__Mkenv__item__phase1 : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -815,7 +817,7 @@ let (__proj__Mkenv__item__failhard : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -829,7 +831,7 @@ let (__proj__Mkenv__item__nosynth : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -843,7 +845,7 @@ let (__proj__Mkenv__item__uvar_subtyping : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -851,6 +853,35 @@ let (__proj__Mkenv__item__uvar_subtyping : env -> Prims.bool) =
         dsenv; nbe; strict_args_tab; erasable_types_tab; enable_defer_to_tac;
         unif_allow_ref_guards; erase_erasable_args; core_check;_} ->
         uvar_subtyping
+let (__proj__Mkenv__item__intactics : env -> Prims.bool) =
+  fun projectee ->
+    match projectee with
+    | { solver; range; curmodule; gamma; gamma_sig; gamma_cache; modules;
+        expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
+        generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
+        admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
+        typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
+        subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
+        fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
+        splice; mpreprocess; postprocess; identifier_info; tc_hooks; 
+        dsenv; nbe; strict_args_tab; erasable_types_tab; enable_defer_to_tac;
+        unif_allow_ref_guards; erase_erasable_args; core_check;_} ->
+        intactics
+let (__proj__Mkenv__item__nocoerce : env -> Prims.bool) =
+  fun projectee ->
+    match projectee with
+    | { solver; range; curmodule; gamma; gamma_sig; gamma_cache; modules;
+        expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
+        generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
+        admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
+        typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
+        subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
+        fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
+        splice; mpreprocess; postprocess; identifier_info; tc_hooks; 
+        dsenv; nbe; strict_args_tab; erasable_types_tab; enable_defer_to_tac;
+        unif_allow_ref_guards; erase_erasable_args; core_check;_} -> nocoerce
 let (__proj__Mkenv__item__tc_term :
   env ->
     env ->
@@ -864,7 +895,7 @@ let (__proj__Mkenv__item__tc_term :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -885,7 +916,7 @@ let (__proj__Mkenv__item__typeof_tot_or_gtot_term :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -901,7 +932,7 @@ let (__proj__Mkenv__item__universe_of :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -922,7 +953,7 @@ let (__proj__Mkenv__item__typeof_well_typed_tot_or_gtot_term :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -940,7 +971,7 @@ let (__proj__Mkenv__item__teq_nosmt_force :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -958,7 +989,7 @@ let (__proj__Mkenv__item__subtype_nosmt_force :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -968,8 +999,8 @@ let (__proj__Mkenv__item__subtype_nosmt_force :
         subtype_nosmt_force
 let (__proj__Mkenv__item__qtbl_name_and_index :
   env ->
-    (Prims.int FStar_Compiler_Util.smap * (FStar_Ident.lident * Prims.int)
-      FStar_Pervasives_Native.option))
+    ((FStar_Ident.lident * FStar_Syntax_Syntax.typ * Prims.int)
+      FStar_Pervasives_Native.option * Prims.int FStar_Compiler_Util.smap))
   =
   fun projectee ->
     match projectee with
@@ -977,7 +1008,7 @@ let (__proj__Mkenv__item__qtbl_name_and_index :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -993,7 +1024,7 @@ let (__proj__Mkenv__item__normalized_eff_names :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1009,7 +1040,7 @@ let (__proj__Mkenv__item__fv_delta_depths :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1024,7 +1055,7 @@ let (__proj__Mkenv__item__proof_ns : env -> proof_namespace) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1043,7 +1074,7 @@ let (__proj__Mkenv__item__synth_hook :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1062,7 +1093,7 @@ let (__proj__Mkenv__item__try_solve_implicits_hook :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1085,7 +1116,7 @@ let (__proj__Mkenv__item__splice :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1104,7 +1135,7 @@ let (__proj__Mkenv__item__mpreprocess :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1125,7 +1156,7 @@ let (__proj__Mkenv__item__postprocess :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1141,7 +1172,7 @@ let (__proj__Mkenv__item__identifier_info :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1156,7 +1187,7 @@ let (__proj__Mkenv__item__tc_hooks : env -> tcenv_hooks) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1170,7 +1201,7 @@ let (__proj__Mkenv__item__dsenv : env -> FStar_Syntax_DsEnv.env) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1188,7 +1219,7 @@ let (__proj__Mkenv__item__nbe :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1206,7 +1237,7 @@ let (__proj__Mkenv__item__strict_args_tab :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1222,7 +1253,7 @@ let (__proj__Mkenv__item__erasable_types_tab :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1237,7 +1268,7 @@ let (__proj__Mkenv__item__enable_defer_to_tac : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1252,7 +1283,7 @@ let (__proj__Mkenv__item__unif_allow_ref_guards : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1267,7 +1298,7 @@ let (__proj__Mkenv__item__erase_erasable_args : env -> Prims.bool) =
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1290,7 +1321,7 @@ let (__proj__Mkenv__item__core_check :
         expected_typ; sigtab; attrtab; instantiate_imp; effects = effects1;
         generalize; letrecs; top_level; check_uvars; use_eq_strict; is_iface;
         admit; lax; lax_universes; phase1; failhard; nosynth; uvar_subtyping;
-        tc_term; typeof_tot_or_gtot_term; universe_of;
+        intactics; nocoerce; tc_term; typeof_tot_or_gtot_term; universe_of;
         typeof_well_typed_tot_or_gtot_term; teq_nosmt_force;
         subtype_nosmt_force; qtbl_name_and_index; normalized_eff_names;
         fv_delta_depths; proof_ns; synth_hook; try_solve_implicits_hook;
@@ -1512,6 +1543,8 @@ let (rename_env : FStar_Syntax_Syntax.subst_t -> env -> env) =
         failhard = (env1.failhard);
         nosynth = (env1.nosynth);
         uvar_subtyping = (env1.uvar_subtyping);
+        intactics = (env1.intactics);
+        nocoerce = (env1.nocoerce);
         tc_term = (env1.tc_term);
         typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
         universe_of = (env1.universe_of);
@@ -1571,6 +1604,8 @@ let (set_tc_hooks : env -> tcenv_hooks -> env) =
         failhard = (env1.failhard);
         nosynth = (env1.nosynth);
         uvar_subtyping = (env1.uvar_subtyping);
+        intactics = (env1.intactics);
+        nocoerce = (env1.nocoerce);
         tc_term = (env1.tc_term);
         typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
         universe_of = (env1.universe_of);
@@ -1629,6 +1664,8 @@ let (set_dep_graph : env -> FStar_Parser_Dep.deps -> env) =
         failhard = (e.failhard);
         nosynth = (e.nosynth);
         uvar_subtyping = (e.uvar_subtyping);
+        intactics = (e.intactics);
+        nocoerce = (e.nocoerce);
         tc_term = (e.tc_term);
         typeof_tot_or_gtot_term = (e.typeof_tot_or_gtot_term);
         universe_of = (e.universe_of);
@@ -1734,7 +1771,7 @@ let (initial_env :
                           let uu___4 =
                             FStar_Compiler_Util.smap_create
                               (Prims.of_int (10)) in
-                          (uu___4, FStar_Pervasives_Native.None) in
+                          (FStar_Pervasives_Native.None, uu___4) in
                         let uu___4 =
                           FStar_Compiler_Util.smap_create (Prims.of_int (20)) in
                         let uu___5 =
@@ -1781,6 +1818,8 @@ let (initial_env :
                           failhard = false;
                           nosynth = false;
                           uvar_subtyping = true;
+                          intactics = false;
+                          nocoerce = false;
                           tc_term;
                           typeof_tot_or_gtot_term;
                           universe_of;
@@ -1909,13 +1948,13 @@ let (push_stack : env -> env) =
      let uu___3 = FStar_Compiler_Util.smap_copy (attrtab env1) in
      let uu___4 =
        let uu___5 =
-         let uu___6 =
-           FStar_Compiler_Effect.op_Bar_Greater env1.qtbl_name_and_index
-             FStar_Pervasives_Native.fst in
-         FStar_Compiler_Util.smap_copy uu___6 in
-       let uu___6 =
          FStar_Compiler_Effect.op_Bar_Greater env1.qtbl_name_and_index
-           FStar_Pervasives_Native.snd in
+           FStar_Pervasives_Native.fst in
+       let uu___6 =
+         let uu___7 =
+           FStar_Compiler_Effect.op_Bar_Greater env1.qtbl_name_and_index
+             FStar_Pervasives_Native.snd in
+         FStar_Compiler_Util.smap_copy uu___7 in
        (uu___5, uu___6) in
      let uu___5 = FStar_Compiler_Util.smap_copy env1.normalized_eff_names in
      let uu___6 = FStar_Compiler_Util.smap_copy env1.fv_delta_depths in
@@ -1950,6 +1989,8 @@ let (push_stack : env -> env) =
        failhard = (env1.failhard);
        nosynth = (env1.nosynth);
        uvar_subtyping = (env1.uvar_subtyping);
+       intactics = (env1.intactics);
+       nocoerce = (env1.nocoerce);
        tc_term = (env1.tc_term);
        typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
        universe_of = (env1.universe_of);
@@ -2032,6 +2073,8 @@ let (snapshot : env -> Prims.string -> (tcenv_depth_t * env)) =
                                   failhard = (env2.failhard);
                                   nosynth = (env2.nosynth);
                                   uvar_subtyping = (env2.uvar_subtyping);
+                                  intactics = (env2.intactics);
+                                  nocoerce = (env2.nocoerce);
                                   tc_term = (env2.tc_term);
                                   typeof_tot_or_gtot_term =
                                     (env2.typeof_tot_or_gtot_term);
@@ -2118,8 +2161,8 @@ let (incr_query_index : env -> env) =
   fun env1 ->
     let qix = peek_query_indices () in
     match env1.qtbl_name_and_index with
-    | (uu___, FStar_Pervasives_Native.None) -> env1
-    | (tbl, FStar_Pervasives_Native.Some (l, n)) ->
+    | (FStar_Pervasives_Native.None, uu___) -> env1
+    | (FStar_Pervasives_Native.Some (l, typ, n), tbl) ->
         let uu___ =
           FStar_Compiler_Effect.op_Bar_Greater qix
             (FStar_Compiler_List.tryFind
@@ -2158,6 +2201,8 @@ let (incr_query_index : env -> env) =
                 failhard = (env1.failhard);
                 nosynth = (env1.nosynth);
                 uvar_subtyping = (env1.uvar_subtyping);
+                intactics = (env1.intactics);
+                nocoerce = (env1.nocoerce);
                 tc_term = (env1.tc_term);
                 typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
                 universe_of = (env1.universe_of);
@@ -2166,7 +2211,7 @@ let (incr_query_index : env -> env) =
                 teq_nosmt_force = (env1.teq_nosmt_force);
                 subtype_nosmt_force = (env1.subtype_nosmt_force);
                 qtbl_name_and_index =
-                  (tbl, (FStar_Pervasives_Native.Some (l, next)));
+                  ((FStar_Pervasives_Native.Some (l, typ, next)), tbl);
                 normalized_eff_names = (env1.normalized_eff_names);
                 fv_delta_depths = (env1.fv_delta_depths);
                 proof_ns = (env1.proof_ns);
@@ -2217,6 +2262,8 @@ let (incr_query_index : env -> env) =
                 failhard = (env1.failhard);
                 nosynth = (env1.nosynth);
                 uvar_subtyping = (env1.uvar_subtyping);
+                intactics = (env1.intactics);
+                nocoerce = (env1.nocoerce);
                 tc_term = (env1.tc_term);
                 typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
                 universe_of = (env1.universe_of);
@@ -2225,7 +2272,7 @@ let (incr_query_index : env -> env) =
                 teq_nosmt_force = (env1.teq_nosmt_force);
                 subtype_nosmt_force = (env1.subtype_nosmt_force);
                 qtbl_name_and_index =
-                  (tbl, (FStar_Pervasives_Native.Some (l, next)));
+                  ((FStar_Pervasives_Native.Some (l, typ, next)), tbl);
                 normalized_eff_names = (env1.normalized_eff_names);
                 fv_delta_depths = (env1.fv_delta_depths);
                 proof_ns = (env1.proof_ns);
@@ -2282,6 +2329,8 @@ let (set_range : env -> FStar_Compiler_Range_Type.range -> env) =
           failhard = (e.failhard);
           nosynth = (e.nosynth);
           uvar_subtyping = (e.uvar_subtyping);
+          intactics = (e.intactics);
+          nocoerce = (e.nocoerce);
           tc_term = (e.tc_term);
           typeof_tot_or_gtot_term = (e.typeof_tot_or_gtot_term);
           universe_of = (e.universe_of);
@@ -2336,7 +2385,11 @@ let (insert_fv_info :
           FStar_TypeChecker_Common.id_info_insert_fv uu___1 fv ty in
         FStar_Compiler_Effect.op_Colon_Equals env1.identifier_info uu___
 let (promote_id_info :
-  env -> (FStar_Syntax_Syntax.typ -> FStar_Syntax_Syntax.typ) -> unit) =
+  env ->
+    (FStar_Syntax_Syntax.typ ->
+       FStar_Syntax_Syntax.typ FStar_Pervasives_Native.option)
+      -> unit)
+  =
   fun env1 ->
     fun ty_map ->
       let uu___ =
@@ -2375,6 +2428,8 @@ let (set_current_module : env -> FStar_Ident.lident -> env) =
         failhard = (env1.failhard);
         nosynth = (env1.nosynth);
         uvar_subtyping = (env1.uvar_subtyping);
+        intactics = (env1.intactics);
+        nocoerce = (env1.nocoerce);
         tc_term = (env1.tc_term);
         typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
         universe_of = (env1.universe_of);
@@ -2635,16 +2690,18 @@ let (lookup_qname : env -> FStar_Ident.lident -> qninfo) =
                              FStar_Syntax_Syntax.sigquals = uu___7;
                              FStar_Syntax_Syntax.sigmeta = uu___8;
                              FStar_Syntax_Syntax.sigattrs = uu___9;
-                             FStar_Syntax_Syntax.sigopts = uu___10;_})
+                             FStar_Syntax_Syntax.sigopens_and_abbrevs =
+                               uu___10;
+                             FStar_Syntax_Syntax.sigopts = uu___11;_})
                             ->
                             FStar_Compiler_Util.find_map ses
                               (fun se ->
-                                 let uu___11 =
+                                 let uu___12 =
                                    FStar_Compiler_Effect.op_Bar_Greater
                                      (FStar_Syntax_Util.lids_of_sigelt se)
                                      (FStar_Compiler_Util.for_some
                                         (FStar_Ident.lid_equals lid)) in
-                                 if uu___11
+                                 if uu___12
                                  then
                                    cache
                                      ((FStar_Pervasives.Inr
@@ -2921,12 +2978,13 @@ let (try_lookup_lid_aux :
                       FStar_Syntax_Syntax.sigquals = uu___6;
                       FStar_Syntax_Syntax.sigmeta = uu___7;
                       FStar_Syntax_Syntax.sigattrs = uu___8;
-                      FStar_Syntax_Syntax.sigopts = uu___9;_},
+                      FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___9;
+                      FStar_Syntax_Syntax.sigopts = uu___10;_},
                     FStar_Pervasives_Native.None)
                    ->
-                   let uu___10 =
-                     let uu___11 = inst_tscheme1 (uvs, t) in (uu___11, rng) in
-                   FStar_Pervasives_Native.Some uu___10
+                   let uu___11 =
+                     let uu___12 = inst_tscheme1 (uvs, t) in (uu___12, rng) in
+                   FStar_Pervasives_Native.Some uu___11
                | FStar_Pervasives.Inr
                    ({
                       FStar_Syntax_Syntax.sigel =
@@ -2938,29 +2996,30 @@ let (try_lookup_lid_aux :
                       FStar_Syntax_Syntax.sigquals = qs;
                       FStar_Syntax_Syntax.sigmeta = uu___2;
                       FStar_Syntax_Syntax.sigattrs = uu___3;
-                      FStar_Syntax_Syntax.sigopts = uu___4;_},
+                      FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___4;
+                      FStar_Syntax_Syntax.sigopts = uu___5;_},
                     FStar_Pervasives_Native.None)
                    ->
-                   let uu___5 =
-                     let uu___6 = in_cur_mod env1 l in uu___6 = Yes in
-                   if uu___5
+                   let uu___6 =
+                     let uu___7 = in_cur_mod env1 l in uu___7 = Yes in
+                   if uu___6
                    then
-                     let uu___6 =
+                     let uu___7 =
                        (FStar_Compiler_Effect.op_Bar_Greater qs
                           (FStar_Compiler_List.contains
                              FStar_Syntax_Syntax.Assumption))
                          || env1.is_iface in
-                     (if uu___6
+                     (if uu___7
                       then
-                        let uu___7 =
-                          let uu___8 = inst_tscheme1 (uvs, t) in
-                          (uu___8, rng) in
-                        FStar_Pervasives_Native.Some uu___7
+                        let uu___8 =
+                          let uu___9 = inst_tscheme1 (uvs, t) in
+                          (uu___9, rng) in
+                        FStar_Pervasives_Native.Some uu___8
                       else FStar_Pervasives_Native.None)
                    else
-                     (let uu___7 =
-                        let uu___8 = inst_tscheme1 (uvs, t) in (uu___8, rng) in
-                      FStar_Pervasives_Native.Some uu___7)
+                     (let uu___8 =
+                        let uu___9 = inst_tscheme1 (uvs, t) in (uu___9, rng) in
+                      FStar_Pervasives_Native.Some uu___8)
                | FStar_Pervasives.Inr
                    ({
                       FStar_Syntax_Syntax.sigel =
@@ -2976,26 +3035,27 @@ let (try_lookup_lid_aux :
                       FStar_Syntax_Syntax.sigquals = uu___5;
                       FStar_Syntax_Syntax.sigmeta = uu___6;
                       FStar_Syntax_Syntax.sigattrs = uu___7;
-                      FStar_Syntax_Syntax.sigopts = uu___8;_},
+                      FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___8;
+                      FStar_Syntax_Syntax.sigopts = uu___9;_},
                     FStar_Pervasives_Native.None)
                    ->
                    (match tps with
                     | [] ->
-                        let uu___9 =
-                          let uu___10 = inst_tscheme1 (uvs, k) in
-                          (uu___10, rng) in
-                        FStar_Pervasives_Native.Some uu___9
-                    | uu___9 ->
                         let uu___10 =
-                          let uu___11 =
-                            let uu___12 =
-                              let uu___13 =
-                                let uu___14 = FStar_Syntax_Syntax.mk_Total k in
-                                FStar_Syntax_Util.flat_arrow tps uu___14 in
-                              (uvs, uu___13) in
-                            inst_tscheme1 uu___12 in
+                          let uu___11 = inst_tscheme1 (uvs, k) in
                           (uu___11, rng) in
-                        FStar_Pervasives_Native.Some uu___10)
+                        FStar_Pervasives_Native.Some uu___10
+                    | uu___10 ->
+                        let uu___11 =
+                          let uu___12 =
+                            let uu___13 =
+                              let uu___14 =
+                                let uu___15 = FStar_Syntax_Syntax.mk_Total k in
+                                FStar_Syntax_Util.flat_arrow tps uu___15 in
+                              (uvs, uu___14) in
+                            inst_tscheme1 uu___13 in
+                          (uu___12, rng) in
+                        FStar_Pervasives_Native.Some uu___11)
                | FStar_Pervasives.Inr
                    ({
                       FStar_Syntax_Syntax.sigel =
@@ -3011,26 +3071,27 @@ let (try_lookup_lid_aux :
                       FStar_Syntax_Syntax.sigquals = uu___5;
                       FStar_Syntax_Syntax.sigmeta = uu___6;
                       FStar_Syntax_Syntax.sigattrs = uu___7;
-                      FStar_Syntax_Syntax.sigopts = uu___8;_},
+                      FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___8;
+                      FStar_Syntax_Syntax.sigopts = uu___9;_},
                     FStar_Pervasives_Native.Some us)
                    ->
                    (match tps with
                     | [] ->
-                        let uu___9 =
-                          let uu___10 = inst_tscheme_with (uvs, k) us in
-                          (uu___10, rng) in
-                        FStar_Pervasives_Native.Some uu___9
-                    | uu___9 ->
                         let uu___10 =
-                          let uu___11 =
-                            let uu___12 =
-                              let uu___13 =
-                                let uu___14 = FStar_Syntax_Syntax.mk_Total k in
-                                FStar_Syntax_Util.flat_arrow tps uu___14 in
-                              (uvs, uu___13) in
-                            inst_tscheme_with uu___12 us in
+                          let uu___11 = inst_tscheme_with (uvs, k) us in
                           (uu___11, rng) in
-                        FStar_Pervasives_Native.Some uu___10)
+                        FStar_Pervasives_Native.Some uu___10
+                    | uu___10 ->
+                        let uu___11 =
+                          let uu___12 =
+                            let uu___13 =
+                              let uu___14 =
+                                let uu___15 = FStar_Syntax_Syntax.mk_Total k in
+                                FStar_Syntax_Util.flat_arrow tps uu___15 in
+                              (uvs, uu___14) in
+                            inst_tscheme_with uu___13 us in
+                          (uu___12, rng) in
+                        FStar_Pervasives_Native.Some uu___11)
                | FStar_Pervasives.Inr se ->
                    let uu___1 =
                      match se with
@@ -3041,7 +3102,8 @@ let (try_lookup_lid_aux :
                           FStar_Syntax_Syntax.sigquals = uu___4;
                           FStar_Syntax_Syntax.sigmeta = uu___5;
                           FStar_Syntax_Syntax.sigattrs = uu___6;
-                          FStar_Syntax_Syntax.sigopts = uu___7;_},
+                          FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___7;
+                          FStar_Syntax_Syntax.sigopts = uu___8;_},
                         FStar_Pervasives_Native.None) ->
                          lookup_type_of_let us_opt
                            (FStar_Pervasives_Native.fst se) lid
@@ -3191,18 +3253,19 @@ let (try_lookup_val_decl :
               FStar_Syntax_Syntax.sigquals = q;
               FStar_Syntax_Syntax.sigmeta = uu___3;
               FStar_Syntax_Syntax.sigattrs = uu___4;
-              FStar_Syntax_Syntax.sigopts = uu___5;_},
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___5;
+              FStar_Syntax_Syntax.sigopts = uu___6;_},
             FStar_Pervasives_Native.None),
-           uu___6)
+           uu___7)
           ->
-          let uu___7 =
-            let uu___8 =
-              let uu___9 =
-                let uu___10 = FStar_Ident.range_of_lid lid in
-                FStar_Syntax_Subst.set_use_range uu___10 t in
-              (uvs, uu___9) in
-            (uu___8, q) in
-          FStar_Pervasives_Native.Some uu___7
+          let uu___8 =
+            let uu___9 =
+              let uu___10 =
+                let uu___11 = FStar_Ident.range_of_lid lid in
+                FStar_Syntax_Subst.set_use_range uu___11 t in
+              (uvs, uu___10) in
+            (uu___9, q) in
+          FStar_Pervasives_Native.Some uu___8
       | uu___1 -> FStar_Pervasives_Native.None
 let (lookup_val_decl :
   env ->
@@ -3224,12 +3287,13 @@ let (lookup_val_decl :
               FStar_Syntax_Syntax.sigquals = uu___3;
               FStar_Syntax_Syntax.sigmeta = uu___4;
               FStar_Syntax_Syntax.sigattrs = uu___5;
-              FStar_Syntax_Syntax.sigopts = uu___6;_},
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___6;
+              FStar_Syntax_Syntax.sigopts = uu___7;_},
             FStar_Pervasives_Native.None),
-           uu___7)
+           uu___8)
           ->
-          let uu___8 = FStar_Ident.range_of_lid lid in
-          inst_tscheme_with_range uu___8 (uvs, t)
+          let uu___9 = FStar_Ident.range_of_lid lid in
+          inst_tscheme_with_range uu___9 (uvs, t)
       | uu___1 ->
           let uu___2 = name_not_found lid in
           let uu___3 = FStar_Ident.range_of_lid lid in
@@ -3256,12 +3320,13 @@ let (lookup_datacon :
               FStar_Syntax_Syntax.sigquals = uu___6;
               FStar_Syntax_Syntax.sigmeta = uu___7;
               FStar_Syntax_Syntax.sigattrs = uu___8;
-              FStar_Syntax_Syntax.sigopts = uu___9;_},
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___9;
+              FStar_Syntax_Syntax.sigopts = uu___10;_},
             FStar_Pervasives_Native.None),
-           uu___10)
+           uu___11)
           ->
-          let uu___11 = FStar_Ident.range_of_lid lid in
-          inst_tscheme_with_range uu___11 (uvs, t)
+          let uu___12 = FStar_Ident.range_of_lid lid in
+          inst_tscheme_with_range uu___12 (uvs, t)
       | uu___1 ->
           let uu___2 = name_not_found lid in
           let uu___3 = FStar_Ident.range_of_lid lid in
@@ -3290,12 +3355,13 @@ let (lookup_and_inst_datacon :
                 FStar_Syntax_Syntax.sigquals = uu___6;
                 FStar_Syntax_Syntax.sigmeta = uu___7;
                 FStar_Syntax_Syntax.sigattrs = uu___8;
-                FStar_Syntax_Syntax.sigopts = uu___9;_},
+                FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___9;
+                FStar_Syntax_Syntax.sigopts = uu___10;_},
               FStar_Pervasives_Native.None),
-             uu___10)
+             uu___11)
             ->
-            let uu___11 = inst_tscheme_with (uvs, t) us in
-            FStar_Compiler_Effect.op_Bar_Greater uu___11
+            let uu___12 = inst_tscheme_with (uvs, t) us in
+            FStar_Compiler_Effect.op_Bar_Greater uu___12
               FStar_Pervasives_Native.snd
         | uu___1 ->
             let uu___2 = name_not_found lid in
@@ -3324,9 +3390,10 @@ let (datacons_of_typ :
               FStar_Syntax_Syntax.sigquals = uu___8;
               FStar_Syntax_Syntax.sigmeta = uu___9;
               FStar_Syntax_Syntax.sigattrs = uu___10;
-              FStar_Syntax_Syntax.sigopts = uu___11;_},
-            uu___12),
-           uu___13)
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___11;
+              FStar_Syntax_Syntax.sigopts = uu___12;_},
+            uu___13),
+           uu___14)
           -> (true, dcs)
       | uu___1 -> (false, [])
 let (typ_of_datacon : env -> FStar_Ident.lident -> FStar_Ident.lident) =
@@ -3348,9 +3415,10 @@ let (typ_of_datacon : env -> FStar_Ident.lident -> FStar_Ident.lident) =
               FStar_Syntax_Syntax.sigquals = uu___7;
               FStar_Syntax_Syntax.sigmeta = uu___8;
               FStar_Syntax_Syntax.sigattrs = uu___9;
-              FStar_Syntax_Syntax.sigopts = uu___10;_},
-            uu___11),
-           uu___12)
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___10;
+              FStar_Syntax_Syntax.sigopts = uu___11;_},
+            uu___12),
+           uu___13)
           -> l
       | uu___1 ->
           let uu___2 =
@@ -3784,26 +3852,27 @@ let (lookup_effect_abbrev :
                 FStar_Syntax_Syntax.sigquals = quals;
                 FStar_Syntax_Syntax.sigmeta = uu___3;
                 FStar_Syntax_Syntax.sigattrs = uu___4;
-                FStar_Syntax_Syntax.sigopts = uu___5;_},
+                FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___5;
+                FStar_Syntax_Syntax.sigopts = uu___6;_},
               FStar_Pervasives_Native.None),
-             uu___6)
+             uu___7)
             ->
             let lid1 =
-              let uu___7 =
-                let uu___8 = FStar_Ident.range_of_lid lid in
-                let uu___9 =
-                  let uu___10 = FStar_Ident.range_of_lid lid0 in
-                  FStar_Compiler_Range_Type.use_range uu___10 in
-                FStar_Compiler_Range_Type.set_use_range uu___8 uu___9 in
-              FStar_Ident.set_lid_range lid uu___7 in
-            let uu___7 =
+              let uu___8 =
+                let uu___9 = FStar_Ident.range_of_lid lid in
+                let uu___10 =
+                  let uu___11 = FStar_Ident.range_of_lid lid0 in
+                  FStar_Compiler_Range_Type.use_range uu___11 in
+                FStar_Compiler_Range_Type.set_use_range uu___9 uu___10 in
+              FStar_Ident.set_lid_range lid uu___8 in
+            let uu___8 =
               FStar_Compiler_Effect.op_Bar_Greater quals
                 (FStar_Compiler_Util.for_some
-                   (fun uu___8 ->
-                      match uu___8 with
+                   (fun uu___9 ->
+                      match uu___9 with
                       | FStar_Syntax_Syntax.Irreducible -> true
-                      | uu___9 -> false)) in
-            if uu___7
+                      | uu___10 -> false)) in
+            if uu___8
             then FStar_Pervasives_Native.None
             else
               (let insts =
@@ -3812,54 +3881,54 @@ let (lookup_effect_abbrev :
                      (FStar_Compiler_List.length univs)
                  then univ_insts
                  else
-                   (let uu___10 =
-                      let uu___11 =
-                        let uu___12 = get_range env1 in
-                        FStar_Compiler_Range_Ops.string_of_range uu___12 in
-                      let uu___12 = FStar_Syntax_Print.lid_to_string lid1 in
-                      let uu___13 =
+                   (let uu___11 =
+                      let uu___12 =
+                        let uu___13 = get_range env1 in
+                        FStar_Compiler_Range_Ops.string_of_range uu___13 in
+                      let uu___13 = FStar_Syntax_Print.lid_to_string lid1 in
+                      let uu___14 =
                         FStar_Compiler_Effect.op_Bar_Greater
                           (FStar_Compiler_List.length univ_insts)
                           FStar_Compiler_Util.string_of_int in
                       FStar_Compiler_Util.format3
                         "(%s) Unexpected instantiation of effect %s with %s universes"
-                        uu___11 uu___12 uu___13 in
-                    failwith uu___10) in
+                        uu___12 uu___13 uu___14 in
+                    failwith uu___11) in
                match (binders, univs) with
-               | ([], uu___9) ->
+               | ([], uu___10) ->
                    failwith
                      "Unexpected effect abbreviation with no arguments"
-               | (uu___9, uu___10::uu___11::uu___12) ->
-                   let uu___13 =
-                     let uu___14 = FStar_Syntax_Print.lid_to_string lid1 in
-                     let uu___15 =
+               | (uu___10, uu___11::uu___12::uu___13) ->
+                   let uu___14 =
+                     let uu___15 = FStar_Syntax_Print.lid_to_string lid1 in
+                     let uu___16 =
                        FStar_Compiler_Effect.op_Less_Bar
                          FStar_Compiler_Util.string_of_int
                          (FStar_Compiler_List.length univs) in
                      FStar_Compiler_Util.format2
                        "Unexpected effect abbreviation %s; polymorphic in %s universes"
-                       uu___14 uu___15 in
-                   failwith uu___13
-               | uu___9 ->
-                   let uu___10 =
-                     let uu___11 =
-                       let uu___12 = FStar_Syntax_Util.arrow binders c in
-                       (univs, uu___12) in
-                     inst_tscheme_with uu___11 insts in
-                   (match uu___10 with
-                    | (uu___11, t) ->
+                       uu___15 uu___16 in
+                   failwith uu___14
+               | uu___10 ->
+                   let uu___11 =
+                     let uu___12 =
+                       let uu___13 = FStar_Syntax_Util.arrow binders c in
+                       (univs, uu___13) in
+                     inst_tscheme_with uu___12 insts in
+                   (match uu___11 with
+                    | (uu___12, t) ->
                         let t1 =
-                          let uu___12 = FStar_Ident.range_of_lid lid1 in
-                          FStar_Syntax_Subst.set_use_range uu___12 t in
-                        let uu___12 =
-                          let uu___13 = FStar_Syntax_Subst.compress t1 in
-                          uu___13.FStar_Syntax_Syntax.n in
-                        (match uu___12 with
+                          let uu___13 = FStar_Ident.range_of_lid lid1 in
+                          FStar_Syntax_Subst.set_use_range uu___13 t in
+                        let uu___13 =
+                          let uu___14 = FStar_Syntax_Subst.compress t1 in
+                          uu___14.FStar_Syntax_Syntax.n in
+                        (match uu___13 with
                          | FStar_Syntax_Syntax.Tm_arrow
                              { FStar_Syntax_Syntax.bs1 = binders1;
                                FStar_Syntax_Syntax.comp = c1;_}
                              -> FStar_Pervasives_Native.Some (binders1, c1)
-                         | uu___13 -> failwith "Impossible")))
+                         | uu___14 -> failwith "Impossible")))
         | uu___1 -> FStar_Pervasives_Native.None
 let (norm_eff_name : env -> FStar_Ident.lident -> FStar_Ident.lident) =
   fun env1 ->
@@ -3974,9 +4043,10 @@ let (lookup_effect_quals :
               FStar_Syntax_Syntax.sigquals = q;
               FStar_Syntax_Syntax.sigmeta = uu___3;
               FStar_Syntax_Syntax.sigattrs = uu___4;
-              FStar_Syntax_Syntax.sigopts = uu___5;_},
-            uu___6),
-           uu___7)
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___5;
+              FStar_Syntax_Syntax.sigopts = uu___6;_},
+            uu___7),
+           uu___8)
           -> q
       | uu___1 -> []
 let (lookup_projector :
@@ -4026,15 +4096,16 @@ let (is_projector : env -> FStar_Ident.lident -> Prims.bool) =
               FStar_Syntax_Syntax.sigquals = quals;
               FStar_Syntax_Syntax.sigmeta = uu___3;
               FStar_Syntax_Syntax.sigattrs = uu___4;
-              FStar_Syntax_Syntax.sigopts = uu___5;_},
-            uu___6),
-           uu___7)
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___5;
+              FStar_Syntax_Syntax.sigopts = uu___6;_},
+            uu___7),
+           uu___8)
           ->
           FStar_Compiler_Util.for_some
-            (fun uu___8 ->
-               match uu___8 with
-               | FStar_Syntax_Syntax.Projector uu___9 -> true
-               | uu___9 -> false) quals
+            (fun uu___9 ->
+               match uu___9 with
+               | FStar_Syntax_Syntax.Projector uu___10 -> true
+               | uu___10 -> false) quals
       | uu___1 -> false
 let (is_datacon : env -> FStar_Ident.lident -> Prims.bool) =
   fun env1 ->
@@ -4050,9 +4121,10 @@ let (is_datacon : env -> FStar_Ident.lident -> Prims.bool) =
               FStar_Syntax_Syntax.sigquals = uu___3;
               FStar_Syntax_Syntax.sigmeta = uu___4;
               FStar_Syntax_Syntax.sigattrs = uu___5;
-              FStar_Syntax_Syntax.sigopts = uu___6;_},
-            uu___7),
-           uu___8)
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___6;
+              FStar_Syntax_Syntax.sigopts = uu___7;_},
+            uu___8),
+           uu___9)
           -> true
       | uu___1 -> false
 let (is_record : env -> FStar_Ident.lident -> Prims.bool) =
@@ -4069,16 +4141,17 @@ let (is_record : env -> FStar_Ident.lident -> Prims.bool) =
               FStar_Syntax_Syntax.sigquals = quals;
               FStar_Syntax_Syntax.sigmeta = uu___3;
               FStar_Syntax_Syntax.sigattrs = uu___4;
-              FStar_Syntax_Syntax.sigopts = uu___5;_},
-            uu___6),
-           uu___7)
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___5;
+              FStar_Syntax_Syntax.sigopts = uu___6;_},
+            uu___7),
+           uu___8)
           ->
           FStar_Compiler_Util.for_some
-            (fun uu___8 ->
-               match uu___8 with
-               | FStar_Syntax_Syntax.RecordType uu___9 -> true
-               | FStar_Syntax_Syntax.RecordConstructor uu___9 -> true
-               | uu___9 -> false) quals
+            (fun uu___9 ->
+               match uu___9 with
+               | FStar_Syntax_Syntax.RecordType uu___10 -> true
+               | FStar_Syntax_Syntax.RecordConstructor uu___10 -> true
+               | uu___10 -> false) quals
       | uu___1 -> false
 let (qninfo_is_action : qninfo -> Prims.bool) =
   fun qninfo1 ->
@@ -4090,15 +4163,16 @@ let (qninfo_is_action : qninfo -> Prims.bool) =
             FStar_Syntax_Syntax.sigquals = quals;
             FStar_Syntax_Syntax.sigmeta = uu___2;
             FStar_Syntax_Syntax.sigattrs = uu___3;
-            FStar_Syntax_Syntax.sigopts = uu___4;_},
-          uu___5),
-         uu___6)
+            FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___4;
+            FStar_Syntax_Syntax.sigopts = uu___5;_},
+          uu___6),
+         uu___7)
         ->
         FStar_Compiler_Util.for_some
-          (fun uu___7 ->
-             match uu___7 with
-             | FStar_Syntax_Syntax.Action uu___8 -> true
-             | uu___8 -> false) quals
+          (fun uu___8 ->
+             match uu___8 with
+             | FStar_Syntax_Syntax.Action uu___9 -> true
+             | uu___9 -> false) quals
     | uu___ -> false
 let (is_action : env -> FStar_Ident.lident -> Prims.bool) =
   fun env1 ->
@@ -4195,9 +4269,10 @@ let (num_inductive_ty_params :
               FStar_Syntax_Syntax.sigquals = uu___8;
               FStar_Syntax_Syntax.sigmeta = uu___9;
               FStar_Syntax_Syntax.sigattrs = uu___10;
-              FStar_Syntax_Syntax.sigopts = uu___11;_},
-            uu___12),
-           uu___13)
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___11;
+              FStar_Syntax_Syntax.sigopts = uu___12;_},
+            uu___13),
+           uu___14)
           -> FStar_Pervasives_Native.Some (FStar_Compiler_List.length tps)
       | uu___1 -> FStar_Pervasives_Native.None
 let (num_inductive_uniform_ty_params :
@@ -4222,21 +4297,22 @@ let (num_inductive_uniform_ty_params :
               FStar_Syntax_Syntax.sigquals = uu___8;
               FStar_Syntax_Syntax.sigmeta = uu___9;
               FStar_Syntax_Syntax.sigattrs = uu___10;
-              FStar_Syntax_Syntax.sigopts = uu___11;_},
-            uu___12),
-           uu___13)
+              FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___11;
+              FStar_Syntax_Syntax.sigopts = uu___12;_},
+            uu___13),
+           uu___14)
           ->
           (match num_uniform with
            | FStar_Pervasives_Native.None ->
-               let uu___14 =
-                 let uu___15 =
-                   let uu___16 = FStar_Ident.string_of_lid lid in
+               let uu___15 =
+                 let uu___16 =
+                   let uu___17 = FStar_Ident.string_of_lid lid in
                    FStar_Compiler_Util.format1
                      "Internal error: Inductive %s is not decorated with its uniform type parameters"
-                     uu___16 in
-                 (FStar_Errors_Codes.Fatal_UnexpectedInductivetype, uu___15) in
-               let uu___15 = FStar_Ident.range_of_lid lid in
-               FStar_Errors.raise_error uu___14 uu___15
+                     uu___17 in
+                 (FStar_Errors_Codes.Fatal_UnexpectedInductivetype, uu___16) in
+               let uu___16 = FStar_Ident.range_of_lid lid in
+               FStar_Errors.raise_error uu___15 uu___16
            | FStar_Pervasives_Native.Some n -> FStar_Pervasives_Native.Some n)
       | uu___1 -> FStar_Pervasives_Native.None
 let (effect_decl_opt :
@@ -5011,6 +5087,8 @@ let (push_sigelt : env -> FStar_Syntax_Syntax.sigelt -> env) =
           failhard = (env1.failhard);
           nosynth = (env1.nosynth);
           uvar_subtyping = (env1.uvar_subtyping);
+          intactics = (env1.intactics);
+          nocoerce = (env1.nocoerce);
           tc_term = (env1.tc_term);
           typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
           universe_of = (env1.universe_of);
@@ -5086,6 +5164,8 @@ let (push_new_effect :
             failhard = (env1.failhard);
             nosynth = (env1.nosynth);
             uvar_subtyping = (env1.uvar_subtyping);
+            intactics = (env1.intactics);
+            nocoerce = (env1.nocoerce);
             tc_term = (env1.tc_term);
             typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
             universe_of = (env1.universe_of);
@@ -5535,6 +5615,8 @@ let (update_effect_lattice :
              failhard = (env1.failhard);
              nosynth = (env1.nosynth);
              uvar_subtyping = (env1.uvar_subtyping);
+             intactics = (env1.intactics);
+             nocoerce = (env1.nocoerce);
              tc_term = (env1.tc_term);
              typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
              universe_of = (env1.universe_of);
@@ -5607,6 +5689,8 @@ let (add_polymonadic_bind :
               failhard = (env1.failhard);
               nosynth = (env1.nosynth);
               uvar_subtyping = (env1.uvar_subtyping);
+              intactics = (env1.intactics);
+              nocoerce = (env1.nocoerce);
               tc_term = (env1.tc_term);
               typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
               universe_of = (env1.universe_of);
@@ -5682,6 +5766,8 @@ let (add_polymonadic_subcomp :
                 failhard = (env1.failhard);
                 nosynth = (env1.nosynth);
                 uvar_subtyping = (env1.uvar_subtyping);
+                intactics = (env1.intactics);
+                nocoerce = (env1.nocoerce);
                 tc_term = (env1.tc_term);
                 typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
                 universe_of = (env1.universe_of);
@@ -5738,6 +5824,8 @@ let (push_local_binding : env -> FStar_Syntax_Syntax.binding -> env) =
         failhard = (env1.failhard);
         nosynth = (env1.nosynth);
         uvar_subtyping = (env1.uvar_subtyping);
+        intactics = (env1.intactics);
+        nocoerce = (env1.nocoerce);
         tc_term = (env1.tc_term);
         typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
         universe_of = (env1.universe_of);
@@ -5806,6 +5894,8 @@ let (pop_bv :
               failhard = (env1.failhard);
               nosynth = (env1.nosynth);
               uvar_subtyping = (env1.uvar_subtyping);
+              intactics = (env1.intactics);
+              nocoerce = (env1.nocoerce);
               tc_term = (env1.tc_term);
               typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
               universe_of = (env1.universe_of);
@@ -5918,6 +6008,8 @@ let (set_expected_typ : env -> FStar_Syntax_Syntax.typ -> env) =
         failhard = (env1.failhard);
         nosynth = (env1.nosynth);
         uvar_subtyping = (env1.uvar_subtyping);
+        intactics = (env1.intactics);
+        nocoerce = (env1.nocoerce);
         tc_term = (env1.tc_term);
         typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
         universe_of = (env1.universe_of);
@@ -5976,6 +6068,8 @@ let (set_expected_typ_maybe_eq :
           failhard = (env1.failhard);
           nosynth = (env1.nosynth);
           uvar_subtyping = (env1.uvar_subtyping);
+          intactics = (env1.intactics);
+          nocoerce = (env1.nocoerce);
           tc_term = (env1.tc_term);
           typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
           universe_of = (env1.universe_of);
@@ -6044,6 +6138,8 @@ let (clear_expected_typ :
        failhard = (env_.failhard);
        nosynth = (env_.nosynth);
        uvar_subtyping = (env_.uvar_subtyping);
+       intactics = (env_.intactics);
+       nocoerce = (env_.nocoerce);
        tc_term = (env_.tc_term);
        typeof_tot_or_gtot_term = (env_.typeof_tot_or_gtot_term);
        universe_of = (env_.universe_of);
@@ -6115,6 +6211,8 @@ let (finish_module : env -> FStar_Syntax_Syntax.modul -> env) =
         failhard = (env1.failhard);
         nosynth = (env1.nosynth);
         uvar_subtyping = (env1.uvar_subtyping);
+        intactics = (env1.intactics);
+        nocoerce = (env1.nocoerce);
         tc_term = (env1.tc_term);
         typeof_tot_or_gtot_term = (env1.typeof_tot_or_gtot_term);
         universe_of = (env1.universe_of);
@@ -6305,6 +6403,8 @@ let (cons_proof_ns : Prims.bool -> env -> name_prefix -> env) =
           failhard = (e.failhard);
           nosynth = (e.nosynth);
           uvar_subtyping = (e.uvar_subtyping);
+          intactics = (e.intactics);
+          nocoerce = (e.nocoerce);
           tc_term = (e.tc_term);
           typeof_tot_or_gtot_term = (e.typeof_tot_or_gtot_term);
           universe_of = (e.universe_of);
@@ -6366,6 +6466,8 @@ let (set_proof_ns : proof_namespace -> env -> env) =
         failhard = (e.failhard);
         nosynth = (e.nosynth);
         uvar_subtyping = (e.uvar_subtyping);
+        intactics = (e.intactics);
+        nocoerce = (e.nocoerce);
         tc_term = (e.tc_term);
         typeof_tot_or_gtot_term = (e.typeof_tot_or_gtot_term);
         universe_of = (e.universe_of);

@@ -27,8 +27,8 @@ open FStar.Syntax.Embeddings
 open FStar.TypeChecker.Env
 open FStar.TypeChecker.Common
 open FStar.Tactics.Types
-open FStar.Tactics.Basic
-open FStar.Tactics.Interpreter
+open FStar.Tactics.V1.Interpreter
+open FStar.Tactics.V2.Interpreter
 
 module BU      = FStar.Compiler.Util
 module Range   = FStar.Compiler.Range
@@ -44,7 +44,10 @@ module Env     = FStar.TypeChecker.Env
 module TcUtil  = FStar.TypeChecker.Util
 module TcRel   = FStar.TypeChecker.Rel
 module TcTerm  = FStar.TypeChecker.TcTerm
-module RE      = FStar.Reflection.Embeddings
+
+(* We only use the _abstract_ embeddings from this module,
+hence there is no v1/v2 distinction. *)
+module RE      = FStar.Reflection.V2.Embeddings
 
 let run_tactic_on_typ
         (rng_tac : Range.range) (rng_goal : Range.range)
@@ -52,8 +55,8 @@ let run_tactic_on_typ
                     : list goal // remaining goals
                     * term // witness
                     =
-    let rng = range_of_rng (use_range rng_goal) (use_range rng_tac) in
-    let ps, w = proofstate_of_goal_ty rng env typ in
+    let rng = range_of_rng (use_range rng_tac) (use_range rng_goal) in
+    let ps, w = FStar.Tactics.V2.Basic.proofstate_of_goal_ty rng env typ in
     let tactic_already_typed = false in
     let gs, _res = run_tactic_on_ps rng_tac rng_goal false e_unit () e_unit tactic tactic_already_typed ps in
     gs, w
@@ -63,7 +66,7 @@ let run_tactic_on_all_implicits
         (tactic:term) (env:Env.env) (imps:Env.implicits)
     : list goal // remaining goals
     =
-    let ps, _ = proofstate_of_all_implicits rng_goal env imps in
+    let ps, _ = FStar.Tactics.V2.Basic.proofstate_of_all_implicits rng_goal env imps in
     let tactic_already_typed = false in
     let goals, () =
       run_tactic_on_ps
@@ -322,12 +325,11 @@ let preprocess (env:Env.env) (goal:term) : list (Env.env * term * O.optionstate)
                  if !tacdbg then
                      BU.print2 "Got goal #%s: %s\n" (string_of_int n) (Print.term_to_string (goal_type g));
                  let label =
-                    if get_label g = ""
-                    then "Could not prove goal #" ^ string_of_int n
-                    else "Could not prove goal #" ^ string_of_int n ^ " (" ^ get_label g ^ ")"
+                    "Could not prove goal #" ^ string_of_int n ^
+                    (if get_label g = "" then "" else " (" ^ get_label g ^ ")")
                  in
-                 let gt' = TcUtil.label label  goal.pos phi in
-                 (n+1, (goal_env g, gt', g.opts)::gs)) s gs in
+                 let gt' = TcUtil.label label (goal_range g) phi in
+                 (n+1, (goal_env g, gt', goal_opts g)::gs)) s gs in
     let (_, gs) = s in
     let gs = List.rev gs in (* Return new VCs in same order as goals *)
     // Use default opts for main goal
@@ -732,6 +734,7 @@ let solve_implicits (env:Env.env) (tau:term) (imps:Env.implicits) : unit =
     Options.with_saved_options (fun () ->
       let _ = Options.set_options "--no_tactics" in
       gs |> List.iter (fun g ->
+        Options.set (goal_opts g);
         match getprop (goal_env g) (goal_type g) with
         | Some vc ->
           begin
@@ -824,7 +827,7 @@ let splice (env:Env.env) (is_typed:bool) (lids:list Ident.lident) (tau:term) (rn
 
     TcRel.force_trivial_guard env g;
 
-    let ps = proofstate_of_goals tau.pos env [] [] in
+    let ps = FStar.Tactics.V2.Basic.proofstate_of_goals tau.pos env [] [] in
     let tactic_already_typed = true in
     let gs, sigelts =
       if is_typed
@@ -852,34 +855,47 @@ let splice (env:Env.env) (is_typed:bool) (lids:list Ident.lident) (tau:term) (rn
           sigquals = [S.Visible_default];  // default visibility
           sigmeta = S.default_sigmeta;
           sigattrs = [];
-          sigopts = None}]
+          sigopts = None;
+          sigopens_and_abbrevs=[]
+          }]
       end
       else run_tactic_on_ps tau.pos tau.pos false
              e_unit ()
-             (e_list RE.e_sigelt) tau tactic_already_typed ps in
+             (e_list RE.e_sigelt) tau tactic_already_typed ps
+    in
 
-      // set delta depths in the sigelts fvs
-      let sigelts =
-        let set_lb_dd lb =
-          let {lbname=Inr fv; lbdef} = lb in
-          {lb with lbname=Inr {fv with fv_delta=U.incr_delta_qualifier lbdef
-                                                |> Some}} in
-        List.map (fun se ->
-          match se.sigel with
-          | Sig_let {lbs=(is_rec, lbs); lids} ->
-            {se with sigel=Sig_let {lbs=(is_rec, List.map set_lb_dd lbs); lids}}
-          | _ -> se
-        ) sigelts in
+    // set delta depths in the sigelts fvs
+    let sigelts =
+      let set_lb_dd lb =
+        let {lbname=Inr fv; lbdef} = lb in
+        {lb with lbname=Inr {fv with fv_delta=U.incr_delta_qualifier lbdef
+                                              |> Some}} in
+      List.map (fun se ->
+        match se.sigel with
+        | Sig_let {lbs=(is_rec, lbs); lids} ->
+          {se with sigel=Sig_let {lbs=(is_rec, List.map set_lb_dd lbs); lids}}
+        | _ -> se
+      ) sigelts
+    in
 
-    // Check that all goals left are irrelevant. We don't need to check their
-    // validity, as we will typecheck the witness independently.
-
-    // TODO: Do not retypecheck and do just like `synth`. But that's hard.. what to do for inductives,
-    // for instance? We would need to reflect *all* of F* static semantics into Meta-F*, and
-    // that is a ton of work.
-
-    if List.existsML (fun g -> not (Option.isSome (getprop (goal_env g) (goal_type g)))) gs
-        then Err.raise_error (Err.Fatal_OpenGoalsInSynthesis, "splice left open goals") rng;
+    // Check that all goals left are irrelevant and solve them.
+    Options.with_saved_options (fun () ->
+      List.iter (fun g ->
+        Options.set (goal_opts g);
+        match getprop (goal_env g) (goal_type g) with
+        | Some vc ->
+            begin
+            if !tacdbg then
+              BU.print1 "Splice left a goal: %s\n" (Print.term_to_string vc);
+            let guard = { guard_f = NonTrivial vc
+                        ; deferred_to_tac = []
+                        ; deferred = []
+                        ; univ_ineqs = [], []
+                        ; implicits = [] } in
+              TcRel.force_trivial_guard (goal_env g) guard
+            end
+        | None ->
+            Err.raise_error (Err.Fatal_OpenGoalsInSynthesis, "splice left open goals") rng) gs);
 
     let lids' = List.collect U.lids_of_sigelt sigelts in
     List.iter (fun lid ->
@@ -933,7 +949,7 @@ let mpreprocess (env:Env.env) (tau:term) (tm:term) : term =
   Errors.with_ctx "While preprocessing a definition with a tactic" (fun () ->
     if env.nosynth then tm else begin
     tacdbg := Env.debug env (O.Other "Tac");
-    let ps = proofstate_of_goals tm.pos env [] [] in
+    let ps = FStar.Tactics.V2.Basic.proofstate_of_goals tm.pos env [] [] in
     let tactic_already_typed = false in
     let gs, tm = run_tactic_on_ps tau.pos tm.pos false RE.e_term tm RE.e_term tau tactic_already_typed ps in
     tm

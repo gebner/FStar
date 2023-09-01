@@ -286,28 +286,40 @@ let sort_ftv ftv =
   BU.sort_with (fun x y -> String.compare (string_of_id x) (string_of_id y)) <|
       BU.remove_dups (fun x y -> (string_of_id x) = (string_of_id y)) ftv
 
-let rec free_type_vars_b env binder = match binder.b with
-  | Variable _ -> env, []
+let rec free_vars_b tvars_only env binder : (Env.env & list ident) =
+  match binder.b with
+  | Variable x ->
+    if tvars_only
+    then env, [] //tvars can't clash with vars
+    else (
+      let env, _ = Env.push_bv env x in
+      env, []
+    )
   | TVariable x ->
     let env, _ = Env.push_bv env x in
-    (env, [x])
-  | Annotated(_, term) ->
-    (env, free_type_vars env term)
-  | TAnnotated(id, _) ->
-    let env, _ = Env.push_bv env id in
-    (env, [])
+    env, [x]
+  | Annotated(x, term) ->
+    if tvars_only  //tvars can't clash with vars
+    then env, free_vars tvars_only env term
+    else (
+      let env', _ = Env.push_bv env x in
+      env', free_vars tvars_only env term
+    )
+  | TAnnotated(id, term) ->
+    let env', _ = Env.push_bv env id in
+    env', free_vars tvars_only env term
   | NoName t ->
-    (env, free_type_vars env t)
+    env, free_vars tvars_only env t
 
-and free_type_vars_bs env binders =
+and free_vars_bs tvars_only env binders =
     List.fold_left
       (fun (env, free) binder ->
-        let env, f = free_type_vars_b env binder in
+        let env, f = free_vars_b tvars_only env binder in
         env, f@free)
       (env, [])
       binders
 
-and free_type_vars env t = match (unparen t).tm with
+and free_vars tvars_only env t = match (unparen t).tm with
   | Labeled _ -> failwith "Impossible --- labeled source term"
 
   | Tvar a ->
@@ -315,10 +327,25 @@ and free_type_vars env t = match (unparen t).tm with
       | None -> [a]
       | _ -> [])
 
+  | Var x ->
+    if tvars_only 
+    then []
+    else (
+      let ids = Ident.ids_of_lid x in
+      match ids with
+      | [id] -> ( //unqualified name
+        if None? (Env.try_lookup_id env id)
+        && None? (Env.try_lookup_lid env x)
+        then [id]
+        else []
+      )
+      | _ -> []
+    )
+    
   | Wild
   | Const _
   | Uvar _
-  | Var  _
+
   | Projector _
   | Discrim _
   | Name _  -> []
@@ -326,91 +353,91 @@ and free_type_vars env t = match (unparen t).tm with
   | Requires (t, _)
   | Ensures (t, _)
   | Decreases (t, _)
-  | NamedTyp(_, t) -> free_type_vars env t
+  | NamedTyp(_, t) -> free_vars tvars_only env t
 
-  | LexList l -> List.collect (free_type_vars env) l
+  | LexList l -> List.collect (free_vars tvars_only env) l
   | WFOrder (rel, e) ->
-    (free_type_vars env rel) @ (free_type_vars env e)
+    (free_vars tvars_only env rel) @ (free_vars tvars_only env e)
 
   | Paren t -> failwith "impossible"
 
   | Ascribed(t, t', tacopt, _) ->
     let ts = t::t'::(match tacopt with None -> [] | Some t -> [t]) in
-    List.collect (free_type_vars env) ts
+    List.collect (free_vars tvars_only env) ts
 
-  | Construct(_, ts) -> List.collect (fun (t, _) -> free_type_vars env t) ts
+  | Construct(_, ts) -> List.collect (fun (t, _) -> free_vars tvars_only env t) ts
 
-  | Op(_, ts) -> List.collect (free_type_vars env) ts
+  | Op(_, ts) -> List.collect (free_vars tvars_only env) ts
 
-  | App(t1,t2,_) -> free_type_vars env t1@free_type_vars env t2
+  | App(t1,t2,_) -> free_vars tvars_only env t1@free_vars tvars_only env t2
 
   | Refine (b, t) ->
-    let env, f = free_type_vars_b env b in
-    f@free_type_vars env t
+    let env, f = free_vars_b tvars_only env b in
+    f@free_vars tvars_only env t
 
   | Sum(binders, body) ->
     let env, free = List.fold_left (fun (env, free) bt ->
       let env, f =
         match bt with
-        | Inl binder -> free_type_vars_b env binder
-        | Inr t -> env, free_type_vars env t
+        | Inl binder -> free_vars_b tvars_only env binder
+        | Inr t -> env, free_vars tvars_only env t
       in
       env, f@free) (env, []) binders in
-    free@free_type_vars env body
+    free@free_vars tvars_only env body
 
   | Product(binders, body) ->
-    let env, free = free_type_vars_bs env binders in
-    free@free_type_vars env body
+    let env, free = free_vars_bs tvars_only env binders in
+    free@free_vars tvars_only env body
 
-  | Project(t, _) -> free_type_vars env t
+  | Project(t, _) -> free_vars tvars_only env t
 
   | Attributes cattributes ->
       (* attributes should be closed but better safe than sorry *)
-      List.collect (free_type_vars env) cattributes
+      List.collect (free_vars tvars_only env) cattributes
 
   | CalcProof (rel, init, steps) ->
-    free_type_vars env rel
-    @ free_type_vars env init
+    free_vars tvars_only env rel
+    @ free_vars tvars_only env init
     @ List.collect (fun (CalcStep (rel, just, next)) ->
-                            free_type_vars env rel
-                            @ free_type_vars env just
-                            @ free_type_vars env next) steps
+                            free_vars tvars_only env rel
+                            @ free_vars tvars_only env just
+                            @ free_vars tvars_only env next) steps
 
   | ElimForall  (bs, t, ts) ->
-    let env', free = free_type_vars_bs env bs in
+    let env', free = free_vars_bs tvars_only env bs in
     free@
-    free_type_vars env' t@
-    List.collect (free_type_vars env') ts
+    free_vars tvars_only env' t@
+    List.collect (free_vars tvars_only env') ts
 
   | ElimExists (binders, p, q, y, e) ->
-    let env', free = free_type_vars_bs env binders in
-    let env'', free' = free_type_vars_b env' y in
+    let env', free = free_vars_bs tvars_only env binders in
+    let env'', free' = free_vars_b tvars_only env' y in
     free@
-    free_type_vars env' p@
-    free_type_vars env  q@
+    free_vars tvars_only env' p@
+    free_vars tvars_only env  q@
     free'@
-    free_type_vars env'' e
+    free_vars tvars_only env'' e
 
   | ElimImplies (p, q, e) ->
-    free_type_vars env p@
-    free_type_vars env q@
-    free_type_vars env e
+    free_vars tvars_only env p@
+    free_vars tvars_only env q@
+    free_vars tvars_only env e
 
   | ElimOr(p, q, r, x, e, x', e') ->
-    free_type_vars env p@
-    free_type_vars env q@
-    free_type_vars env r@
-    (let env', free = free_type_vars_b env x in
-     free@free_type_vars env' e)@
-    (let env', free = free_type_vars_b env x' in
-     free@free_type_vars env' e')
+    free_vars tvars_only env p@
+    free_vars tvars_only env q@
+    free_vars tvars_only env r@
+    (let env', free = free_vars_b tvars_only env x in
+     free@free_vars tvars_only env' e)@
+    (let env', free = free_vars_b tvars_only env x' in
+     free@free_vars tvars_only env' e')
 
   | ElimAnd(p, q, r, x, y, e) ->
-    free_type_vars env p@
-    free_type_vars env q@
-    free_type_vars env r@
-    (let env', free = free_type_vars_bs env [x;y] in
-     free@free_type_vars env' e)
+    free_vars tvars_only env p@
+    free_vars tvars_only env q@
+    free_vars tvars_only env r@
+    (let env', free = free_vars_bs tvars_only env [x;y] in
+     free@free_vars tvars_only env' e)
 
   | Abs _  (* not closing implicitly over free vars in all these forms: TODO: Fixme! *)
   | Let _
@@ -426,6 +453,8 @@ and free_type_vars env t = match (unparen t).tm with
   | VQuote _
   | Antiquote _
   | Seq _ -> []
+
+let free_type_vars = free_vars true
 
 let head_and_args t =
     let rec aux args t = match (unparen t).tm with
@@ -2705,7 +2734,8 @@ let binder_ident (b:binder) : option ident =
 let binder_idents (bs:list binder) : list ident =
   List.collect (fun b -> FStar.Common.list_of_option (binder_ident b)) bs
 
-let mk_data_discriminators quals env datas =
+
+let mk_data_discriminators quals env datas attrs =
     let quals = quals |> List.filter (function
         | S.NoExtract
         | S.Private -> true
@@ -2722,8 +2752,9 @@ let mk_data_discriminators quals env datas =
           sigrng = range_of_lid disc_name;// FIXME: Isn't that range wrong?
           sigquals =  quals [(* S.Logic ; *) S.OnlyName ; S.Discriminator d];
           sigmeta = default_sigmeta;
-          sigattrs = [];
+          sigattrs = attrs;
           sigopts = None;
+          sigopens_and_abbrevs = DsEnv.opens_and_abbrevs env
         })
 
 let mk_indexed_projector_names iquals fvq attrs env lid (fields:list S.binder) =
@@ -2755,8 +2786,9 @@ let mk_indexed_projector_names iquals fvq attrs env lid (fields:list S.binder) =
                      sigquals = quals;
                      sigrng = range_of_lid field_name;
                      sigmeta = default_sigmeta ;
-                     sigattrs = [];
-                     sigopts = None; } in
+                     sigattrs = attrs;
+                     sigopts = None;
+                     sigopens_and_abbrevs = opens_and_abbrevs env } in
         if only_decl
         then [decl] //only the signature
         else
@@ -2775,8 +2807,10 @@ let mk_indexed_projector_names iquals fvq attrs env lid (fields:list S.binder) =
                          sigquals = quals;
                          sigrng = p;
                          sigmeta = default_sigmeta;
-                         sigattrs = [];
-                         sigopts = None; } in
+                         sigattrs = attrs;
+                         sigopts = None;
+                         sigopens_and_abbrevs = opens_and_abbrevs env
+                        } in
             if no_decl then [impl] else [decl;impl]) |> List.flatten
 
 let mk_data_projector_names iquals env se : list sigelt =
@@ -2805,7 +2839,7 @@ let mk_data_projector_names iquals env se : list sigelt =
 let mk_typ_abbrev env d lid uvs typars kopt t lids quals rng =
     (* fetch attributes here to support `deprecated`, just as for
      * TopLevelLet (see comment there) *)
-    let attrs = List.map (desugar_term env) d.attrs in
+    let attrs = U.deduplicate_terms (List.map (desugar_term env) d.attrs) in
     let val_attrs = Env.lookup_letbinding_quals_and_attrs env lid |> snd in
     let dd = incr_delta_qualifier t in
     let lb = {
@@ -2821,10 +2855,12 @@ let mk_typ_abbrev env d lid uvs typars kopt t lids quals rng =
       sigquals = quals;
       sigrng = rng;
       sigmeta = default_sigmeta ;
-      sigattrs = val_attrs @ attrs;
-      sigopts = None; }
+      sigattrs = U.deduplicate_terms (val_attrs @ attrs);
+      sigopts = None;
+      sigopens_and_abbrevs = opens_and_abbrevs env
+    }
 
-let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
+let rec desugar_tycon env (d: AST.decl) (d_attrs:list S.term) quals tcs : (env_t * sigelts) =
   let rng = d.drange in
   let tycon_id = function
     | TyconAbstract(id, _, _)
@@ -2865,8 +2901,8 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
          concat_options additional_records @ [TyconVariant (id, bds, k, variants)]
     | tycon -> [tycon] in
   let tcs = concatMap desugar_tycon_variant_record tcs in
-  let tot = mk_term (Name (C.effect_Tot_lid)) rng Expr in
-  let with_constructor_effect t = mk_term (App(tot, t, Nothing)) t.range t.level in
+  let tot rng = mk_term (Name (C.effect_Tot_lid)) rng Expr in
+  let with_constructor_effect t = mk_term (App(tot t.range, t, Nothing)) t.range t.level in
   let apply_binders t binders =
     let imp_of_aqual (b:AST.binder) = match b.aqual with
         | Some Implicit
@@ -2910,10 +2946,12 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
                                             mutuals;
                                             ds=[]};
                  sigquals = quals;
-                 sigrng = rng;
+                 sigrng = range_of_id id;
                  sigmeta = default_sigmeta;
-                 sigattrs = [];
-                 sigopts = None } in
+                 sigattrs = d_attrs;
+                 sigopts = None;
+                 sigopens_and_abbrevs = opens_and_abbrevs env
+               } in
       let _env, _ = Env.push_top_level_rec_binding _env id S.delta_constant in
       let _env2, _ = Env.push_top_level_rec_binding _env' id S.delta_constant in
       _env, _env2, se, tconstr
@@ -2992,12 +3030,14 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
                  { sigel = Sig_effect_abbrev {lid=qlid; us=[]; bs=typars; comp=c;
                                               cflags=cattributes @ comp_flags c};
                    sigquals = quals;
-                   sigrng = rng;
+                   sigrng = range_of_id id;
                    sigmeta = default_sigmeta  ;
                    sigattrs = [];
-                   sigopts = None; }
+                   sigopts = None;
+                   sigopens_and_abbrevs = opens_and_abbrevs env
+                  }
             else let t = desugar_typ env' t in
-                 mk_typ_abbrev env d qlid [] typars kopt t [qlid] quals rng in
+                 mk_typ_abbrev env d qlid [] typars kopt t [qlid] quals (range_of_id id) in
 
         let env = push_sigelt env se in
         env, [se]
@@ -3005,7 +3045,7 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
     | [TyconRecord _] ->
       let trec = List.hd tcs in
       let t, fs = tycon_record_as_variant trec in
-      desugar_tycon env d (RecordType (ids_of_lid (current_module env), fs)::quals) [t]
+      desugar_tycon env d d_attrs (RecordType (ids_of_lid (current_module env), fs)::quals) [t]
 
     |  _::_ ->
       let env0 = env in
@@ -3038,7 +3078,7 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
                   let tpars = Subst.close_binders tpars in
                   Subst.close tpars t
           in
-          [([], mk_typ_abbrev env d id uvs tpars (Some k) t [id] quals rng)]
+          [([], mk_typ_abbrev env d id uvs tpars (Some k) t [id] quals (range_of_lid id))]
 
         | Inl ({ sigel = Sig_inductive_typ {lid=tname;
                                             us=univs;
@@ -3054,8 +3094,7 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
           let env_tps, tps = push_tparams env tpars in
           let data_tpars = List.map (fun tp -> { tp with S.binder_qual = Some (S.Implicit true) }) tps in
           let tot_tconstr = mk_tot tconstr in
-          let attrs = List.map (desugar_term env) d.attrs in
-          let val_attrs = Env.lookup_letbinding_quals_and_attrs env tname |> snd in
+          let val_attrs = Env.lookup_letbinding_quals_and_attrs env0 tname |> snd in
           let constrNames, constrs = List.split <|
               (constrs |> List.map (fun (id, payload, cons_attrs) ->
                 let t = match payload with
@@ -3077,11 +3116,20 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
                                                     num_ty_params=ntps;
                                                     mutuals};
                                             sigquals = quals;
-                                            sigrng = rng;
+                                            sigrng = range_of_lid name;
                                             sigmeta = default_sigmeta  ;
-                                            sigattrs = val_attrs @ attrs @ map (desugar_term env) cons_attrs;
-                                            sigopts = None; }))))
+                                            sigattrs = U.deduplicate_terms (val_attrs @ d_attrs @ map (desugar_term env) cons_attrs);
+                                            sigopts = None;
+                                            sigopens_and_abbrevs = opens_and_abbrevs env
+                              }))))
           in
+          if Options.debug_at_level_no_module (Options.Other "attrs")
+          then (
+            BU.print3 "Adding attributes to type %s: val_attrs=[@@%s] attrs=[@@%s]\n" 
+              (string_of_lid tname)
+              (String.concat ", " (List.map Print.term_to_string val_attrs))
+              (String.concat ", " (List.map Print.term_to_string d_attrs))
+          );
           ([], { sigel = Sig_inductive_typ {lid=tname;
                                             us=univs;
                                             params=tpars;
@@ -3090,14 +3138,21 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
                                             mutuals;
                                             ds=constrNames};
                                  sigquals = tname_quals;
-                                 sigrng = rng;
+                                 sigrng = range_of_lid tname;
                                  sigmeta = default_sigmeta  ;
-                                 sigattrs = val_attrs @ attrs;
-                                 sigopts = None; })::constrs
+                                 sigattrs = U.deduplicate_terms (val_attrs @ d_attrs);
+                                 sigopts = None;
+                                 sigopens_and_abbrevs = opens_and_abbrevs env
+                })::constrs
         | _ -> failwith "impossible")
       in
       let sigelts = tps_sigelts |> List.map (fun (_, se) -> se) in
       let bundle, abbrevs = FStar.Syntax.MutRecTy.disentangle_abbrevs_from_bundle sigelts quals (List.collect U.lids_of_sigelt sigelts) rng in
+      if Options.debug_at_level_no_module (Options.Other "attrs")
+      then (
+        BU.print1 "After disentangling: %s\n"
+              (Print.sigelt_to_string bundle)
+      );      
       let env = push_sigelt env0 bundle in
       let env = List.fold_left push_sigelt env abbrevs in
       (* NOTE: derived operators such as projectors and discriminators are using the type names before unfolding. *)
@@ -3105,7 +3160,7 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
       let discs = sigelts |> List.collect (fun se -> match se.sigel with
         | Sig_inductive_typ {lid=tname; params=tps; t=k; ds=constrs} ->
           let quals = se.sigquals in
-          mk_data_discriminators quals env
+          mk_data_discriminators quals env 
             (constrs |> List.filter (fun data_lid ->  //AR: create data discriminators only for non-record data constructors
                                      let data_quals =
                                        let data_se = sigelts |> List.find (fun se -> match se.sigel with
@@ -3113,6 +3168,7 @@ let rec desugar_tycon env (d: AST.decl) quals tcs : (env_t * sigelts) =
                                                                                      | _ -> false) |> must in
                                        data_se.sigquals in
                                      not (data_quals |> List.existsb (function | RecordConstructor _ -> true | _ -> false))))
+            se.sigattrs
         | _ -> []) in
       let ops = discs@data_ops in
       let env = List.fold_left push_sigelt env ops in
@@ -3140,7 +3196,9 @@ let push_reflect_effect env quals (effect_name:Ident.lid) range =
                            sigquals = quals;
                            sigmeta = default_sigmeta  ;
                            sigattrs = [];
-                           sigopts = None; } in
+                           sigopts = None;
+                           sigopens_and_abbrevs = opens_and_abbrevs env
+                         } in
          Env.push_sigelt env refl_decl // FIXME: Add docs to refl_decl?
     else env
 
@@ -3161,7 +3219,7 @@ let parse_attr_with_list warn (at:S.term) (head:lident) : option (list int) * bo
        | [] -> Some [], true
        | [(a1, _)] ->
          begin
-         match EMB.unembed (EMB.e_list EMB.e_int) a1 true EMB.id_norm_cb with
+         match EMB.unembed (EMB.e_list EMB.e_int) a1 EMB.id_norm_cb with
          | Some es ->
            Some (List.map FStar.BigInt.to_int_fs es), true
          | _ ->
@@ -3213,7 +3271,7 @@ let lookup_effect_lid env (l:lident) r : S.eff_decl =
       r
   | Some l -> l
 
-let rec desugar_effect env d (quals: qualifiers) (is_layered:bool) eff_name eff_binders eff_typ eff_decls attrs =
+let rec desugar_effect env d (d_attrs:list S.term) (quals: qualifiers) (is_layered:bool) eff_name eff_binders eff_typ eff_decls =
     let env0 = env in
     // qualified with effect name
     let monad_env = Env.enter_monad_scope env eff_name in
@@ -3233,10 +3291,10 @@ let rec desugar_effect env d (quals: qualifiers) (is_layered:bool) eff_name eff_
       let rr_members = ["repr" ; "return" ; "bind"] in
       if for_free then rr_members
         (*
-         * AR: subcomp and if_then_else are optional
+         * AR: subcomp, if_then_else, and close are optional
          *     but adding here so as not to count them as actions
          *)
-      else if is_layered then rr_members @ [ "subcomp"; "if_then_else" ]
+      else if is_layered then rr_members @ [ "subcomp"; "if_then_else"; "close" ]
         (* the first 3 are optional but must not be counted as actions *)
       else rr_members @ [
         "return_wp";
@@ -3327,6 +3385,7 @@ let rec desugar_effect env d (quals: qualifiers) (is_layered:bool) eff_name eff_
       else if is_layered then
         let has_subcomp = List.existsb (fun decl -> name_of_eff_decl decl = "subcomp") eff_decls in
         let has_if_then_else = List.existsb (fun decl -> name_of_eff_decl decl = "if_then_else") eff_decls in
+        let has_close = List.existsb (fun decl -> name_of_eff_decl decl = "close") eff_decls in
 
         //setting the second component to dummy_ts,
         //  and kind to None, typechecker fills them in
@@ -3377,6 +3436,10 @@ let rec desugar_effect env d (quals: qualifiers) (is_layered:bool) eff_name eff_
           l_if_then_else =
             if has_if_then_else then lookup "if_then_else" |> to_comb
             else dummy_tscheme, dummy_tscheme, None;
+          l_close =
+            if has_close then Some (lookup "close", dummy_tscheme)
+            else None;  // If close is not specified, leave it to None
+                        // The typechecker will also not fill it in
         })
       else
         let rr = BU.for_some (function S.Reifiable | S.Reflectable _ -> true | _ -> false) qualifiers in
@@ -3412,7 +3475,7 @@ let rec desugar_effect env d (quals: qualifiers) (is_layered:bool) eff_name eff_
       signature = eff_sig;
       combinators = combinators;
       actions = actions;
-      eff_attrs = List.map (desugar_term env) attrs;
+      eff_attrs = d_attrs;
       extraction_mode
     }) in
 
@@ -3421,8 +3484,9 @@ let rec desugar_effect env d (quals: qualifiers) (is_layered:bool) eff_name eff_
       sigquals = qualifiers;
       sigrng = d.drange;
       sigmeta = default_sigmeta  ;
-      sigattrs = [];
+      sigattrs = d_attrs;
       sigopts = None;
+      sigopens_and_abbrevs = opens_and_abbrevs env
     }) in
 
     let env = push_sigelt env0 se in
@@ -3433,7 +3497,7 @@ let rec desugar_effect env d (quals: qualifiers) (is_layered:bool) eff_name eff_
     let env = push_reflect_effect env qualifiers mname d.drange in
     env, [se]
 
-and desugar_redefine_effect env d trans_qual quals eff_name eff_binders defn =
+and desugar_redefine_effect env d d_attrs trans_qual quals eff_name eff_binders defn =
     let env0 = env in
     let env = Env.enter_monad_scope env eff_name in
     let env, binders = desugar_binders env eff_binders in
@@ -3496,8 +3560,10 @@ and desugar_redefine_effect env d trans_qual quals eff_name eff_binders defn =
         sigquals = List.map (trans_qual (Some mname)) quals;
         sigrng = d.drange;
         sigmeta = default_sigmeta  ;
-        sigattrs = [];
-        sigopts = None; }
+        sigattrs = d_attrs;
+        sigopts = None;
+        sigopens_and_abbrevs = opens_and_abbrevs env
+      }
     in
     let monad_env = env in
     let env = push_sigelt env0 se in
@@ -3515,36 +3581,35 @@ and desugar_redefine_effect env d trans_qual quals eff_name eff_binders defn =
                                sigrng = d.drange;
                                sigmeta = default_sigmeta  ;
                                sigattrs = [];
-                               sigopts = None; } in
+                               sigopts = None;
+                               sigopens_and_abbrevs = opens_and_abbrevs env
+                              } in
              push_sigelt env refl_decl
         else env in
     env, [se]
 
 
-and desugar_decl_aux env (d: decl): (env_t * sigelts) =
+and desugar_decl_maybe_fail_attr env (d: decl): (env_t * sigelts) =
   let no_fail_attrs (ats : list S.term) : list S.term =
       List.filter (fun at -> Option.isNone (get_fail_attr1 false at)) ats
   in
 
-  // Rather than carrying the attributes down the maze of recursive calls, we
-  // let each desugar_foo function provide an empty list, then override it here.
-  // However, we still pass `attrs` to desguar_decl_noattrs so that a Sig_let
-  // can propagate them to individual bindings. Also the `fail` attribute behaves
+  // The `fail` attribute behaves
   // differentrly! We only keep that one on the first new decl.
   let env0 = Env.snapshot env |> snd in (* we need the snapshot since pushing the let
                                          * will shadow a previous val *)
-  let attrs = List.map (desugar_term env) d.attrs in
 
   (* If this is an expect_failure, check to see if it fails.
    * If it does, check that the errors match as we normally do.
    * If it doesn't fail, leave it alone! The typechecker will check the failure. *)
   let env, sigelts =
+    let attrs = U.deduplicate_terms (List.map (desugar_term env) d.attrs) in
     match get_fail_attr false attrs with
     | Some (expected_errs, lax) ->
       let d = { d with attrs = [] } in
       let errs, r = Errors.catch_errors (fun () ->
                       Options.with_saved_options (fun () ->
-                        desugar_decl_noattrs attrs env d)) in
+                        desugar_decl_core env attrs d)) in
       begin match errs, r with
       | [], Some (env, ses) ->
         (* Succeeded desugaring, carry on, but make a Sig_fail *)
@@ -3554,8 +3619,10 @@ and desugar_decl_aux env (d: decl): (env_t * sigelts) =
                    sigquals = [];
                    sigrng = d.drange;
                    sigmeta = default_sigmeta;
-                   sigattrs = [];
-                   sigopts = None; } in
+                   sigattrs = attrs;
+                   sigopts = None;
+                   sigopens_and_abbrevs = opens_and_abbrevs env
+                  } in
         env0, [se]
 
       | errs, ropt -> (* failed! check that it failed as expected *)
@@ -3580,27 +3647,15 @@ and desugar_decl_aux env (d: decl): (env_t * sigelts) =
         end
       end
     | None ->
-      desugar_decl_noattrs attrs env d
+      desugar_decl_core env attrs d
   in
-
-  let rec val_attrs (ses:list sigelt) : list S.term =
-    match ses with
-    | [{ sigel = Sig_let _}]
-    |  { sigel = Sig_inductive_typ _ } :: _ ->
-      lids_of_sigelt (List.hd sigelts) |>
-      List.collect (fun nm -> snd (Env.lookup_letbinding_quals_and_attrs env0 nm))
-    | [{ sigel = Sig_fail {ses} }] ->
-      List.collect (fun se -> val_attrs [se]) ses
-    | _ -> []
-  in
-  let attrs = attrs @ val_attrs sigelts in
-  env, List.map (fun sigelt -> { sigelt with sigattrs = attrs }) sigelts
+  env, sigelts
 
 and desugar_decl env (d:decl) :(env_t * sigelts) =
-  let env, ses = desugar_decl_aux env d in
+  let env, ses = desugar_decl_maybe_fail_attr env d in
   env, ses |> List.map generalize_annotated_univs
 
-and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
+and desugar_decl_core env (d_attrs:list S.term) (d:decl) : (env_t * sigelts) =
   let trans_qual = trans_qual d.drange in
   match d.d with
   | Pragma p ->
@@ -3609,9 +3664,11 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
     let se = { sigel = Sig_pragma p;
                sigquals = [];
                sigrng = d.drange;
-               sigmeta = default_sigmeta  ;
-               sigattrs = [];
-               sigopts = None; } in
+               sigmeta = default_sigmeta;
+               sigattrs = d_attrs;
+               sigopts = None;
+               sigopens_and_abbrevs = opens_and_abbrevs env
+              } in
     env, [se]
 
   | TopLevelModule id -> env, []
@@ -3652,8 +3709,13 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
             | _ -> raise_error (Errors.Error_BadClassDecl, "Ill-formed `class` declaration: definition must be a record type") d.drange
         else quals
     in
-    let env, ses = desugar_tycon env d (List.map (trans_qual None) quals) tcs in
-
+    let env, ses = desugar_tycon env d d_attrs (List.map (trans_qual None) quals) tcs in
+    if Options.debug_at_level_no_module (Options.Other "attrs")
+    then (
+      BU.print2 "Desugared tycon from {%s} to {%s}\n"
+                (FStar.Parser.AST.decl_to_string d)
+                (String.concat "\n" (List.map FStar.Syntax.Print.sigelt_to_string ses))
+    );
     (* Handling typeclasses: we typecheck the tcs as usual, and then need to add
      * %splice[new_meth_lids] (mk_class type_lid)
      * where the tricky bit is getting the new_meth_lids. To do so,
@@ -3725,7 +3787,8 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
              sigrng = d.drange;
              sigmeta = default_sigmeta;
              sigattrs = [];
-             sigopts = None; }]
+             sigopts = None;
+             sigopens_and_abbrevs = opens_and_abbrevs env }]
         | _ -> []
     in
     let ses, extra =
@@ -3738,11 +3801,15 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
                  { se with sigel = Sig_bundle {ses; lids} }
 
                | Sig_inductive_typ _ ->
-                 { se with sigattrs = S.fvar_with_dd FStar.Parser.Const.tcclass_lid S.delta_constant None :: se.sigattrs }
+                 { se 
+                  with sigattrs = U.deduplicate_terms
+                                    (S.fvar_with_dd FStar.Parser.Const.tcclass_lid S.delta_constant None
+                                      :: se.sigattrs) }
 
                | _ -> se
              in
-             List.map add_class_attr ses, List.concatMap (splice_decl meths) ses
+             List.map add_class_attr ses,
+             List.concatMap (splice_decl meths) ses
         else ses, []
     in
     let env = List.fold_left push_sigelt env extra in
@@ -3782,9 +3849,10 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
           in
           (* Propagate top-level attrs to each lb. The lb.lbattrs field should be empty,
            * but just being safe here. *)
+          let top_attrs = d_attrs in
           let lbs =
             let (isrec, lbs0) = lbs in
-            let lbs0 = lbs0 |> List.map (fun lb -> { lb with lbattrs = lb.lbattrs @ val_attrs @ top_attrs }) in
+            let lbs0 = lbs0 |> List.map (fun lb -> { lb with lbattrs = U.deduplicate_terms (lb.lbattrs @ val_attrs @ top_attrs) }) in
             (isrec, lbs0)
           in
           // BU.print3 "Desugaring %s, val_quals are %s, val_attrs are %s\n"
@@ -3807,8 +3875,10 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
                     sigquals = quals;
                     sigrng = d.drange;
                     sigmeta = default_sigmeta;
-                    sigattrs = val_attrs @ top_attrs;
-                    sigopts = None; } in
+                    sigattrs = U.deduplicate_terms (val_attrs @ top_attrs);
+                    sigopts = None;
+                    sigopens_and_abbrevs = opens_and_abbrevs env
+                   } in
           let env = push_sigelt env s in
           env, [s]
         | _ -> failwith "Desugaring a let did not produce a let"
@@ -3905,8 +3975,10 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
             sigquals = [S.Assumption];
             sigrng = d.drange;
             sigmeta = default_sigmeta  ;
-            sigattrs = [];
-            sigopts = None; }]
+            sigattrs = d_attrs;
+            sigopts = None;
+            sigopens_and_abbrevs = opens_and_abbrevs env
+             }]
 
   | Val(id, t) ->
     let quals = d.quals in
@@ -3917,13 +3989,13 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
         then Assumption::quals
         else quals in
     let lid = qualify env id in
-    let attrs = List.map (desugar_term env) d.attrs in
     let se = { sigel = Sig_declare_typ {lid; us=[]; t};
                sigquals = List.map (trans_qual None) quals;
                sigrng = d.drange;
                sigmeta = default_sigmeta  ;
-               sigattrs = attrs;
-               sigopts = None; } in
+               sigattrs = d_attrs;
+               sigopts = None;
+               sigopens_and_abbrevs = opens_and_abbrevs env } in
     let env = push_sigelt env se in
     env, [se]
 
@@ -3937,37 +4009,38 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
     in
     let l = qualify env id in
     let qual = [ExceptionConstructor] in
+    let top_attrs = d_attrs in
     let se = { sigel = Sig_datacon {lid=l;us=[];t;ty_lid=C.exn_lid;num_ty_params=0;mutuals=[C.exn_lid]};
                sigquals = qual;
                sigrng = d.drange;
                sigmeta = default_sigmeta  ;
-               sigattrs = [];
-               sigopts = None; } in
+               sigattrs = top_attrs;
+               sigopts = None;
+               sigopens_and_abbrevs = opens_and_abbrevs env } in
     let se' = { sigel = Sig_bundle {ses=[se]; lids=[l]};
                 sigquals = qual;
                 sigrng = d.drange;
                 sigmeta = default_sigmeta  ;
-                sigattrs = [];
-                sigopts = None; } in
+                sigattrs = top_attrs;
+                sigopts = None;
+                sigopens_and_abbrevs = opens_and_abbrevs env } in
     let env = push_sigelt env se' in
     let data_ops = mk_data_projector_names [] env se in
-    let discs = mk_data_discriminators [] env [l] in
+    let discs = mk_data_discriminators [] env [l] top_attrs in
     let env = List.fold_left push_sigelt env (discs@data_ops) in
     env, se'::discs@data_ops
 
   | NewEffect (RedefineEffect(eff_name, eff_binders, defn)) ->
     let quals = d.quals in
-    desugar_redefine_effect env d trans_qual quals eff_name eff_binders defn
+    desugar_redefine_effect env d d_attrs trans_qual quals eff_name eff_binders defn
 
   | NewEffect (DefineEffect(eff_name, eff_binders, eff_typ, eff_decls)) ->
     let quals = d.quals in
-    let attrs = d.attrs in
-    desugar_effect env d quals false eff_name eff_binders eff_typ eff_decls attrs
+    desugar_effect env d d_attrs quals false eff_name eff_binders eff_typ eff_decls
 
   | LayeredEffect (DefineEffect (eff_name, eff_binders, eff_typ, eff_decls)) ->
     let quals = d.quals in
-    let attrs = d.attrs in
-    desugar_effect env d quals true eff_name eff_binders eff_typ eff_decls attrs
+    desugar_effect env d d_attrs quals true eff_name eff_binders eff_typ eff_decls
 
   | LayeredEffect (RedefineEffect _) ->
     failwith "Impossible: LayeredEffect (RedefineEffect _) (should not be parseable)"
@@ -3975,6 +4048,7 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
   | SubEffect l ->
     let src_ed = lookup_effect_lid env l.msource d.drange in
     let dst_ed = lookup_effect_lid env l.mdest d.drange in
+    let top_attrs = d_attrs in
     if not (U.is_layered src_ed || U.is_layered dst_ed)
     then let lift_wp, lift = match l.lift_op with
            | NonReifiableLift t -> Some ([],desugar_term env t), None
@@ -3989,8 +4063,9 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
                     sigquals = [];
                     sigrng = d.drange;
                     sigmeta = default_sigmeta  ;
-                    sigattrs = [];
-                    sigopts = None} in
+                    sigattrs = top_attrs;
+                    sigopts = None;
+                    sigopens_and_abbrevs = opens_and_abbrevs env } in
          env, [se]
     else
       (match l.lift_op with
@@ -4007,14 +4082,16 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
            sigquals = [];
            sigrng = d.drange;
            sigmeta = default_sigmeta;
-           sigattrs = [];
-           sigopts = None}]
+           sigattrs = top_attrs;
+           sigopts = None;
+           sigopens_and_abbrevs = opens_and_abbrevs env}]
        | _ -> failwith "Impossible! unexpected lift_op for lift to a layered effect")
 
   | Polymonadic_bind (m_eff, n_eff, p_eff, bind) ->
     let m = lookup_effect_lid env m_eff d.drange in
     let n = lookup_effect_lid env n_eff d.drange in
     let p = lookup_effect_lid env p_eff d.drange in
+    let top_attrs = d_attrs in
     env, [{
       sigel = Sig_polymonadic_bind {
         m_lid=m.mname;
@@ -4026,12 +4103,14 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
       sigquals = [];
       sigrng = d.drange;
       sigmeta = default_sigmeta;
-      sigattrs = [];
-      sigopts = None }]
+      sigattrs = top_attrs;
+      sigopts = None;
+      sigopens_and_abbrevs = opens_and_abbrevs env }]
 
   | Polymonadic_subcomp (m_eff, n_eff, subcomp) ->
     let m = lookup_effect_lid env m_eff d.drange in
     let n = lookup_effect_lid env n_eff d.drange in
+    let top_attrs = d_attrs in    
     env, [{
       sigel = Sig_polymonadic_subcomp {
         m_lid=m.mname;
@@ -4042,21 +4121,24 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
       sigquals = [];
       sigrng = d.drange;
       sigmeta = default_sigmeta;
-      sigattrs = [];
-      sigopts = None }]
+      sigattrs = top_attrs;
+      sigopts = None;
+      sigopens_and_abbrevs = opens_and_abbrevs env }]
 
   | Splice (is_typed, ids, t) ->
     let t = desugar_term env t in
+    let top_attrs = d_attrs in    
     let se = { sigel = Sig_splice {is_typed; lids=List.map (qualify env) ids; tac=t};
                sigquals = List.map (trans_qual None) d.quals;
                sigrng = d.drange;
                sigmeta = default_sigmeta;
-               sigattrs = [];
-               sigopts = None; } in
+               sigattrs = top_attrs;
+               sigopts = None;
+               sigopens_and_abbrevs = opens_and_abbrevs env } in
     let env = push_sigelt env se in
     env, [se]
 
-  | DeclSyntaxExtension (extension_name, code, range) ->
+  | DeclSyntaxExtension (extension_name, code, _, range) ->
     let extension_parser = FStar.Parser.AST.Util.lookup_extension_parser extension_name in
     match extension_parser with
     | None ->
@@ -4078,7 +4160,7 @@ and desugar_decl_noattrs top_attrs env (d:decl) : (env_t * sigelts) =
       | Inr d' ->
         let quals = d'.quals @ d.quals in
         let attrs = d'.attrs @ d.attrs in
-        desugar_decl_aux env { d' with quals; attrs; drange=d.drange }
+        desugar_decl_maybe_fail_attr env { d' with quals; attrs; drange=d.drange }
 
 let desugar_decls env decls =
   let env, sigelts =

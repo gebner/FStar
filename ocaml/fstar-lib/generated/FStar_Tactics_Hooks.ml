@@ -13,16 +13,17 @@ let (run_tactic_on_typ :
         fun env ->
           fun typ ->
             let rng =
-              let uu___ = FStar_Compiler_Range_Type.use_range rng_goal in
-              let uu___1 = FStar_Compiler_Range_Type.use_range rng_tac in
+              let uu___ = FStar_Compiler_Range_Type.use_range rng_tac in
+              let uu___1 = FStar_Compiler_Range_Type.use_range rng_goal in
               FStar_Compiler_Range_Type.range_of_rng uu___ uu___1 in
-            let uu___ = FStar_Tactics_Basic.proofstate_of_goal_ty rng env typ in
+            let uu___ =
+              FStar_Tactics_V2_Basic.proofstate_of_goal_ty rng env typ in
             match uu___ with
             | (ps, w) ->
                 let tactic_already_typed = false in
                 let uu___1 =
-                  FStar_Tactics_Interpreter.run_tactic_on_ps rng_tac rng_goal
-                    false FStar_Syntax_Embeddings.e_unit ()
+                  FStar_Tactics_V2_Interpreter.run_tactic_on_ps rng_tac
+                    rng_goal false FStar_Syntax_Embeddings.e_unit ()
                     FStar_Syntax_Embeddings.e_unit tactic
                     tactic_already_typed ps in
                 (match uu___1 with | (gs, _res) -> (gs, w))
@@ -40,15 +41,15 @@ let (run_tactic_on_all_implicits :
         fun env ->
           fun imps ->
             let uu___ =
-              FStar_Tactics_Basic.proofstate_of_all_implicits rng_goal env
+              FStar_Tactics_V2_Basic.proofstate_of_all_implicits rng_goal env
                 imps in
             match uu___ with
             | (ps, uu___1) ->
                 let tactic_already_typed = false in
                 let uu___2 =
                   let uu___3 = FStar_TypeChecker_Env.get_range env in
-                  FStar_Tactics_Interpreter.run_tactic_on_ps uu___3 rng_goal
-                    true FStar_Syntax_Embeddings.e_unit ()
+                  FStar_Tactics_V2_Interpreter.run_tactic_on_ps uu___3
+                    rng_goal true FStar_Syntax_Embeddings.e_unit ()
                     FStar_Syntax_Embeddings.e_unit tactic
                     tactic_already_typed ps in
                 (match uu___2 with | (goals, ()) -> goals)
@@ -228,7 +229,7 @@ let (by_tactic_interp :
                            let tagged_imps =
                              FStar_TypeChecker_Rel.resolve_implicits_tac e
                                g_imp in
-                           (FStar_Tactics_Interpreter.report_implicits
+                           (FStar_Tactics_V2_Interpreter.report_implicits
                               tm.FStar_Syntax_Syntax.pos tagged_imps;
                             Simplified (uvtm, gs))))
              | uu___2 -> Unchanged t)
@@ -559,9 +560,10 @@ let (preprocess :
            (let uu___2 =
               FStar_TypeChecker_Env.debug env (FStar_Options.Other "Tac") in
             FStar_Compiler_Effect.op_Colon_Equals
-              FStar_Tactics_Interpreter.tacdbg uu___2);
+              FStar_Tactics_V2_Interpreter.tacdbg uu___2);
            (let uu___3 =
-              FStar_Compiler_Effect.op_Bang FStar_Tactics_Interpreter.tacdbg in
+              FStar_Compiler_Effect.op_Bang
+                FStar_Tactics_V2_Interpreter.tacdbg in
             if uu___3
             then
               let uu___4 =
@@ -584,7 +586,7 @@ let (preprocess :
             | (t', gs) ->
                 ((let uu___5 =
                     FStar_Compiler_Effect.op_Bang
-                      FStar_Tactics_Interpreter.tacdbg in
+                      FStar_Tactics_V2_Interpreter.tacdbg in
                   if uu___5
                   then
                     let uu___6 =
@@ -628,7 +630,7 @@ let (preprocess :
                                  | FStar_Pervasives_Native.Some phi1 -> phi1 in
                                ((let uu___7 =
                                    FStar_Compiler_Effect.op_Bang
-                                     FStar_Tactics_Interpreter.tacdbg in
+                                     FStar_Tactics_V2_Interpreter.tacdbg in
                                  if uu___7
                                  then
                                    let uu___8 =
@@ -644,36 +646,35 @@ let (preprocess :
                                 (let label =
                                    let uu___7 =
                                      let uu___8 =
-                                       FStar_Tactics_Types.get_label g in
-                                     uu___8 = "" in
-                                   if uu___7
-                                   then
-                                     let uu___8 =
                                        FStar_Compiler_Util.string_of_int n in
-                                     Prims.op_Hat "Could not prove goal #"
-                                       uu___8
-                                   else
-                                     (let uu___9 =
-                                        let uu___10 =
-                                          FStar_Compiler_Util.string_of_int n in
-                                        let uu___11 =
-                                          let uu___12 =
+                                     let uu___9 =
+                                       let uu___10 =
+                                         let uu___11 =
+                                           FStar_Tactics_Types.get_label g in
+                                         uu___11 = "" in
+                                       if uu___10
+                                       then ""
+                                       else
+                                         (let uu___12 =
                                             let uu___13 =
                                               FStar_Tactics_Types.get_label g in
                                             Prims.op_Hat uu___13 ")" in
-                                          Prims.op_Hat " (" uu___12 in
-                                        Prims.op_Hat uu___10 uu___11 in
-                                      Prims.op_Hat "Could not prove goal #"
-                                        uu___9) in
+                                          Prims.op_Hat " (" uu___12) in
+                                     Prims.op_Hat uu___8 uu___9 in
+                                   Prims.op_Hat "Could not prove goal #"
+                                     uu___7 in
                                  let gt' =
-                                   FStar_TypeChecker_Util.label label
-                                     goal.FStar_Syntax_Syntax.pos phi in
+                                   let uu___7 =
+                                     FStar_Tactics_Types.goal_range g in
+                                   FStar_TypeChecker_Util.label label uu___7
+                                     phi in
                                  let uu___7 =
                                    let uu___8 =
                                      let uu___9 =
                                        FStar_Tactics_Types.goal_env g in
-                                     (uu___9, gt',
-                                       (g.FStar_Tactics_Types.opts)) in
+                                     let uu___10 =
+                                       FStar_Tactics_Types.goal_opts g in
+                                     (uu___9, gt', uu___10) in
                                    uu___8 :: gs1 in
                                  ((n + Prims.int_one), uu___7)))) s gs in
                   let uu___5 = s1 in
@@ -893,6 +894,10 @@ let rec (traverse_for_spinoff :
                                (env2.FStar_TypeChecker_Env.nosynth);
                              FStar_TypeChecker_Env.uvar_subtyping =
                                (env2.FStar_TypeChecker_Env.uvar_subtyping);
+                             FStar_TypeChecker_Env.intactics =
+                               (env2.FStar_TypeChecker_Env.intactics);
+                             FStar_TypeChecker_Env.nocoerce =
+                               (env2.FStar_TypeChecker_Env.nocoerce);
                              FStar_TypeChecker_Env.tc_term =
                                (env2.FStar_TypeChecker_Env.tc_term);
                              FStar_TypeChecker_Env.typeof_tot_or_gtot_term =
@@ -1505,7 +1510,7 @@ let (synthesize :
                    FStar_TypeChecker_Env.debug env
                      (FStar_Options.Other "Tac") in
                  FStar_Compiler_Effect.op_Colon_Equals
-                   FStar_Tactics_Interpreter.tacdbg uu___3);
+                   FStar_Tactics_V2_Interpreter.tacdbg uu___3);
                 (let uu___3 =
                    run_tactic_on_typ tau.FStar_Syntax_Syntax.pos
                      typ.FStar_Syntax_Syntax.pos tau env typ in
@@ -1521,7 +1526,7 @@ let (synthesize :
                            | FStar_Pervasives_Native.Some vc ->
                                ((let uu___7 =
                                    FStar_Compiler_Effect.op_Bang
-                                     FStar_Tactics_Interpreter.tacdbg in
+                                     FStar_Tactics_V2_Interpreter.tacdbg in
                                  if uu___7
                                  then
                                    let uu___8 =
@@ -1566,7 +1571,7 @@ let (solve_implicits :
                    FStar_TypeChecker_Env.debug env
                      (FStar_Options.Other "Tac") in
                  FStar_Compiler_Effect.op_Colon_Equals
-                   FStar_Tactics_Interpreter.tacdbg uu___3);
+                   FStar_Tactics_V2_Interpreter.tacdbg uu___3);
                 (let gs =
                    let uu___3 = FStar_TypeChecker_Env.get_range env in
                    run_tactic_on_all_implicits tau.FStar_Syntax_Syntax.pos
@@ -1588,57 +1593,60 @@ let (solve_implicits :
                       FStar_Compiler_Effect.op_Bar_Greater gs
                         (FStar_Compiler_List.iter
                            (fun g ->
-                              let uu___6 =
-                                let uu___7 = FStar_Tactics_Types.goal_env g in
-                                let uu___8 = FStar_Tactics_Types.goal_type g in
-                                getprop uu___7 uu___8 in
-                              match uu___6 with
-                              | FStar_Pervasives_Native.Some vc ->
-                                  ((let uu___8 =
-                                      FStar_Compiler_Effect.op_Bang
-                                        FStar_Tactics_Interpreter.tacdbg in
-                                    if uu___8
-                                    then
-                                      let uu___9 =
-                                        FStar_Syntax_Print.term_to_string vc in
-                                      FStar_Compiler_Util.print1
-                                        "Synthesis left a goal: %s\n" uu___9
-                                    else ());
-                                   (let uu___8 =
-                                      let uu___9 =
-                                        FStar_Options.admit_smt_queries () in
-                                      Prims.op_Negation uu___9 in
-                                    if uu___8
-                                    then
-                                      let guard =
-                                        {
-                                          FStar_TypeChecker_Common.guard_f =
-                                            (FStar_TypeChecker_Common.NonTrivial
-                                               vc);
-                                          FStar_TypeChecker_Common.deferred_to_tac
-                                            = [];
-                                          FStar_TypeChecker_Common.deferred =
-                                            [];
-                                          FStar_TypeChecker_Common.univ_ineqs
-                                            = ([], []);
-                                          FStar_TypeChecker_Common.implicits
-                                            = []
-                                        } in
-                                      FStar_Profiling.profile
-                                        (fun uu___9 ->
-                                           let uu___10 =
-                                             FStar_Tactics_Types.goal_env g in
-                                           FStar_TypeChecker_Rel.force_trivial_guard
-                                             uu___10 guard)
-                                        FStar_Pervasives_Native.None
-                                        "FStar.TypeChecker.Hooks.force_trivial_guard"
-                                    else ()))
-                              | FStar_Pervasives_Native.None ->
-                                  let uu___7 =
-                                    FStar_TypeChecker_Env.get_range env in
-                                  FStar_Errors.raise_error
-                                    (FStar_Errors_Codes.Fatal_OpenGoalsInSynthesis,
-                                      "synthesis left open goals") uu___7))))))
+                              (let uu___7 = FStar_Tactics_Types.goal_opts g in
+                               FStar_Options.set uu___7);
+                              (let uu___7 =
+                                 let uu___8 = FStar_Tactics_Types.goal_env g in
+                                 let uu___9 = FStar_Tactics_Types.goal_type g in
+                                 getprop uu___8 uu___9 in
+                               match uu___7 with
+                               | FStar_Pervasives_Native.Some vc ->
+                                   ((let uu___9 =
+                                       FStar_Compiler_Effect.op_Bang
+                                         FStar_Tactics_V2_Interpreter.tacdbg in
+                                     if uu___9
+                                     then
+                                       let uu___10 =
+                                         FStar_Syntax_Print.term_to_string vc in
+                                       FStar_Compiler_Util.print1
+                                         "Synthesis left a goal: %s\n"
+                                         uu___10
+                                     else ());
+                                    (let uu___9 =
+                                       let uu___10 =
+                                         FStar_Options.admit_smt_queries () in
+                                       Prims.op_Negation uu___10 in
+                                     if uu___9
+                                     then
+                                       let guard =
+                                         {
+                                           FStar_TypeChecker_Common.guard_f =
+                                             (FStar_TypeChecker_Common.NonTrivial
+                                                vc);
+                                           FStar_TypeChecker_Common.deferred_to_tac
+                                             = [];
+                                           FStar_TypeChecker_Common.deferred
+                                             = [];
+                                           FStar_TypeChecker_Common.univ_ineqs
+                                             = ([], []);
+                                           FStar_TypeChecker_Common.implicits
+                                             = []
+                                         } in
+                                       FStar_Profiling.profile
+                                         (fun uu___10 ->
+                                            let uu___11 =
+                                              FStar_Tactics_Types.goal_env g in
+                                            FStar_TypeChecker_Rel.force_trivial_guard
+                                              uu___11 guard)
+                                         FStar_Pervasives_Native.None
+                                         "FStar.TypeChecker.Hooks.force_trivial_guard"
+                                     else ()))
+                               | FStar_Pervasives_Native.None ->
+                                   let uu___8 =
+                                     FStar_TypeChecker_Env.get_range env in
+                                   FStar_Errors.raise_error
+                                     (FStar_Errors_Codes.Fatal_OpenGoalsInSynthesis,
+                                       "synthesis left open goals") uu___8)))))))
 let (find_user_tac_for_attr :
   FStar_TypeChecker_Env.env ->
     FStar_Syntax_Syntax.term ->
@@ -1699,7 +1707,7 @@ let (handle_smt_goal :
                          FStar_TypeChecker_Env.debug env
                            (FStar_Options.Other "Tac") in
                        FStar_Compiler_Effect.op_Colon_Equals
-                         FStar_Tactics_Interpreter.tacdbg uu___4);
+                         FStar_Tactics_V2_Interpreter.tacdbg uu___4);
                       (let uu___4 =
                          let uu___5 = FStar_TypeChecker_Env.get_range env in
                          let uu___6 =
@@ -1722,7 +1730,7 @@ let (handle_smt_goal :
                                    | FStar_Pervasives_Native.Some vc ->
                                        ((let uu___8 =
                                            FStar_Compiler_Effect.op_Bang
-                                             FStar_Tactics_Interpreter.tacdbg in
+                                             FStar_Tactics_V2_Interpreter.tacdbg in
                                          if uu___8
                                          then
                                            let uu___9 =
@@ -1766,7 +1774,7 @@ let (splice :
                        FStar_TypeChecker_Env.debug env
                          (FStar_Options.Other "Tac") in
                      FStar_Compiler_Effect.op_Colon_Equals
-                       FStar_Tactics_Interpreter.tacdbg uu___3);
+                       FStar_Tactics_V2_Interpreter.tacdbg uu___3);
                     (let uu___3 =
                        if is_typed
                        then
@@ -1780,7 +1788,7 @@ let (splice :
                      | (tau1, uu___4, g) ->
                          (FStar_TypeChecker_Rel.force_trivial_guard env g;
                           (let ps =
-                             FStar_Tactics_Basic.proofstate_of_goals
+                             FStar_Tactics_V2_Basic.proofstate_of_goals
                                tau1.FStar_Syntax_Syntax.pos env [] [] in
                            let tactic_already_typed = true in
                            let uu___6 =
@@ -1789,12 +1797,12 @@ let (splice :
                                let uu___7 =
                                  let uu___8 =
                                    FStar_Syntax_Embeddings.e_tuple2
-                                     FStar_Reflection_Embeddings.e_term
-                                     FStar_Reflection_Embeddings.e_term in
-                                 FStar_Tactics_Interpreter.run_tactic_on_ps
+                                     FStar_Reflection_V2_Embeddings.e_term
+                                     FStar_Reflection_V2_Embeddings.e_term in
+                                 FStar_Tactics_V2_Interpreter.run_tactic_on_ps
                                    tau1.FStar_Syntax_Syntax.pos
                                    tau1.FStar_Syntax_Syntax.pos false
-                                   FStar_Reflection_Embeddings.e_env
+                                   FStar_Reflection_V2_Embeddings.e_env
                                    {
                                      FStar_TypeChecker_Env.solver =
                                        (env.FStar_TypeChecker_Env.solver);
@@ -1845,6 +1853,10 @@ let (splice :
                                        (env.FStar_TypeChecker_Env.nosynth);
                                      FStar_TypeChecker_Env.uvar_subtyping =
                                        (env.FStar_TypeChecker_Env.uvar_subtyping);
+                                     FStar_TypeChecker_Env.intactics =
+                                       (env.FStar_TypeChecker_Env.intactics);
+                                     FStar_TypeChecker_Env.nocoerce =
+                                       (env.FStar_TypeChecker_Env.nocoerce);
                                      FStar_TypeChecker_Env.tc_term =
                                        (env.FStar_TypeChecker_Env.tc_term);
                                      FStar_TypeChecker_Env.typeof_tot_or_gtot_term
@@ -1936,14 +1948,16 @@ let (splice :
                                         FStar_Syntax_Syntax.sigmeta =
                                           FStar_Syntax_Syntax.default_sigmeta;
                                         FStar_Syntax_Syntax.sigattrs = [];
+                                        FStar_Syntax_Syntax.sigopens_and_abbrevs
+                                          = [];
                                         FStar_Syntax_Syntax.sigopts =
                                           FStar_Pervasives_Native.None
                                       }])
                              else
                                (let uu___8 =
                                   FStar_Syntax_Embeddings.e_list
-                                    FStar_Reflection_Embeddings.e_sigelt in
-                                FStar_Tactics_Interpreter.run_tactic_on_ps
+                                    FStar_Reflection_V2_Embeddings.e_sigelt in
+                                FStar_Tactics_V2_Interpreter.run_tactic_on_ps
                                   tau1.FStar_Syntax_Syntax.pos
                                   tau1.FStar_Syntax_Syntax.pos false
                                   FStar_Syntax_Embeddings.e_unit () uu___8
@@ -2034,30 +2048,68 @@ let (splice :
                                               (se.FStar_Syntax_Syntax.sigmeta);
                                             FStar_Syntax_Syntax.sigattrs =
                                               (se.FStar_Syntax_Syntax.sigattrs);
+                                            FStar_Syntax_Syntax.sigopens_and_abbrevs
+                                              =
+                                              (se.FStar_Syntax_Syntax.sigopens_and_abbrevs);
                                             FStar_Syntax_Syntax.sigopts =
                                               (se.FStar_Syntax_Syntax.sigopts)
                                           }
                                       | uu___7 -> se) sigelts in
-                               ((let uu___8 =
-                                   FStar_Compiler_List.existsML
-                                     (fun g1 ->
-                                        let uu___9 =
-                                          let uu___10 =
-                                            let uu___11 =
-                                              FStar_Tactics_Types.goal_env g1 in
-                                            let uu___12 =
-                                              FStar_Tactics_Types.goal_type
-                                                g1 in
-                                            getprop uu___11 uu___12 in
-                                          FStar_Compiler_Option.isSome
-                                            uu___10 in
-                                        Prims.op_Negation uu___9) gs in
-                                 if uu___8
-                                 then
-                                   FStar_Errors.raise_error
-                                     (FStar_Errors_Codes.Fatal_OpenGoalsInSynthesis,
-                                       "splice left open goals") rng
-                                 else ());
+                               (FStar_Options.with_saved_options
+                                  (fun uu___8 ->
+                                     FStar_Compiler_List.iter
+                                       (fun g1 ->
+                                          (let uu___10 =
+                                             FStar_Tactics_Types.goal_opts g1 in
+                                           FStar_Options.set uu___10);
+                                          (let uu___10 =
+                                             let uu___11 =
+                                               FStar_Tactics_Types.goal_env
+                                                 g1 in
+                                             let uu___12 =
+                                               FStar_Tactics_Types.goal_type
+                                                 g1 in
+                                             getprop uu___11 uu___12 in
+                                           match uu___10 with
+                                           | FStar_Pervasives_Native.Some vc
+                                               ->
+                                               ((let uu___12 =
+                                                   FStar_Compiler_Effect.op_Bang
+                                                     FStar_Tactics_V2_Interpreter.tacdbg in
+                                                 if uu___12
+                                                 then
+                                                   let uu___13 =
+                                                     FStar_Syntax_Print.term_to_string
+                                                       vc in
+                                                   FStar_Compiler_Util.print1
+                                                     "Splice left a goal: %s\n"
+                                                     uu___13
+                                                 else ());
+                                                (let guard =
+                                                   {
+                                                     FStar_TypeChecker_Common.guard_f
+                                                       =
+                                                       (FStar_TypeChecker_Common.NonTrivial
+                                                          vc);
+                                                     FStar_TypeChecker_Common.deferred_to_tac
+                                                       = [];
+                                                     FStar_TypeChecker_Common.deferred
+                                                       = [];
+                                                     FStar_TypeChecker_Common.univ_ineqs
+                                                       = ([], []);
+                                                     FStar_TypeChecker_Common.implicits
+                                                       = []
+                                                   } in
+                                                 let uu___12 =
+                                                   FStar_Tactics_Types.goal_env
+                                                     g1 in
+                                                 FStar_TypeChecker_Rel.force_trivial_guard
+                                                   uu___12 guard))
+                                           | FStar_Pervasives_Native.None ->
+                                               FStar_Errors.raise_error
+                                                 (FStar_Errors_Codes.Fatal_OpenGoalsInSynthesis,
+                                                   "splice left open goals")
+                                                 rng)) gs);
                                 (let lids' =
                                    FStar_Compiler_List.collect
                                      FStar_Syntax_Util.lids_of_sigelt
@@ -2094,7 +2146,7 @@ let (splice :
                                       | uu___10 -> ()) lids;
                                  (let uu___10 =
                                     FStar_Compiler_Effect.op_Bang
-                                      FStar_Tactics_Interpreter.tacdbg in
+                                      FStar_Tactics_V2_Interpreter.tacdbg in
                                   if uu___10
                                   then
                                     let uu___11 =
@@ -2152,6 +2204,9 @@ let (splice :
                                                 (se.FStar_Syntax_Syntax.sigmeta);
                                               FStar_Syntax_Syntax.sigattrs =
                                                 (se.FStar_Syntax_Syntax.sigattrs);
+                                              FStar_Syntax_Syntax.sigopens_and_abbrevs
+                                                =
+                                                (se.FStar_Syntax_Syntax.sigopens_and_abbrevs);
                                               FStar_Syntax_Syntax.sigopts =
                                                 (se.FStar_Syntax_Syntax.sigopts)
                                             })) in
@@ -2206,16 +2261,16 @@ let (mpreprocess :
                    FStar_TypeChecker_Env.debug env
                      (FStar_Options.Other "Tac") in
                  FStar_Compiler_Effect.op_Colon_Equals
-                   FStar_Tactics_Interpreter.tacdbg uu___3);
+                   FStar_Tactics_V2_Interpreter.tacdbg uu___3);
                 (let ps =
-                   FStar_Tactics_Basic.proofstate_of_goals
+                   FStar_Tactics_V2_Basic.proofstate_of_goals
                      tm.FStar_Syntax_Syntax.pos env [] [] in
                  let tactic_already_typed = false in
                  let uu___3 =
-                   FStar_Tactics_Interpreter.run_tactic_on_ps
+                   FStar_Tactics_V2_Interpreter.run_tactic_on_ps
                      tau.FStar_Syntax_Syntax.pos tm.FStar_Syntax_Syntax.pos
-                     false FStar_Reflection_Embeddings.e_term tm
-                     FStar_Reflection_Embeddings.e_term tau
+                     false FStar_Reflection_V2_Embeddings.e_term tm
+                     FStar_Reflection_V2_Embeddings.e_term tau
                      tactic_already_typed ps in
                  match uu___3 with | (gs, tm1) -> tm1)))
 let (postprocess :
@@ -2238,7 +2293,7 @@ let (postprocess :
                      FStar_TypeChecker_Env.debug env
                        (FStar_Options.Other "Tac") in
                    FStar_Compiler_Effect.op_Colon_Equals
-                     FStar_Tactics_Interpreter.tacdbg uu___3);
+                     FStar_Tactics_V2_Interpreter.tacdbg uu___3);
                   (let uu___3 =
                      FStar_TypeChecker_Env.new_implicit_var_aux
                        "postprocess RHS" tm.FStar_Syntax_Syntax.pos env typ
@@ -2268,7 +2323,7 @@ let (postprocess :
                                   | FStar_Pervasives_Native.Some vc ->
                                       ((let uu___9 =
                                           FStar_Compiler_Effect.op_Bang
-                                            FStar_Tactics_Interpreter.tacdbg in
+                                            FStar_Tactics_V2_Interpreter.tacdbg in
                                         if uu___9
                                         then
                                           let uu___10 =
@@ -2305,6 +2360,6 @@ let (postprocess :
                              (let tagged_imps =
                                 FStar_TypeChecker_Rel.resolve_implicits_tac
                                   env g_imp in
-                              FStar_Tactics_Interpreter.report_implicits
+                              FStar_Tactics_V2_Interpreter.report_implicits
                                 tm.FStar_Syntax_Syntax.pos tagged_imps;
                               uvtm))))))

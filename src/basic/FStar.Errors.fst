@@ -27,6 +27,8 @@ module BU = FStar.Compiler.Util
 
 open FStar.Errors.Codes
 
+let fallback_range : ref (option range) = BU.mk_ref None
+
 (** This exception is raised in FStar.Error
     when a warn_error string could not be processed;
     The exception is handled in FStar.Options as part of
@@ -96,7 +98,9 @@ let update_flags (l:list (error_flag * string))
      in
      flag, (l, h)
   in
-  let error_range_settings = List.map compute_range l in
+  // NOTE: Rev below so when we handle things like '@0..100-50'
+  // the -50 overrides the @0..100.
+  let error_range_settings = List.map compute_range (List.rev l) in
   List.collect set_flag_for_range error_range_settings
   @ default_settings
 
@@ -156,7 +160,7 @@ let format_issue issue =
 let print_issue issue =
     let printer =
         match issue.issue_level with
-        | EInfo -> BU.print_string
+        | EInfo -> (fun s -> BU.print_string (colorize_magenta s))
         | EWarning -> BU.print_warning
         | EError -> BU.print_error
         | ENotImplemented -> BU.print_error in
@@ -168,6 +172,35 @@ let compare_issues i1 i2 =
     | None, Some _ -> -1
     | Some _, None -> 1
     | Some r1, Some r2 -> FStar.Compiler.Range.compare_use_range r1 r2
+
+let dummy_ide_rng : Range.rng =
+  mk_rng "<input>" (mk_pos 1 0) (mk_pos 1 0)
+
+(* Attempts to set a decent range (no dummy, no dummy ide) relying
+on the fallback_range reference. *)
+let fixup_issue_range (i:issue) : issue =
+  let rng =
+    match i.issue_range with
+    | None ->
+      (* No range given, just rely on the fallback. NB: the
+      fallback could also be set to None if it's too early. *)
+      !fallback_range
+    | Some range ->
+      let use_rng = use_range range in
+      let use_rng' =
+        if use_rng <> dummy_rng && use_rng <> dummy_ide_rng then
+          (* Looks good, use it *)
+          use_rng
+        else if Some? (!fallback_range) then
+          (* Or take the use range from the fallback *)
+          use_range (Some?.v (!fallback_range))
+        else
+          (* Doesn't look good, but no fallback, oh well *)
+          use_rng
+      in
+      Some (set_use_range range use_rng')
+  in
+  { i with issue_range = rng }
 
 let mk_default_handler print =
     let issues : ref (list issue) = BU.mk_ref [] in
@@ -217,6 +250,8 @@ let mk_issue level range msg n ctx = {
 let get_err_count () = (!current_handler).eh_count_errors ()
 
 let wrapped_eh_add_one (h : error_handler) (issue : issue) : unit =
+    (* Try to set a good use range if we got an empty/dummy one *)
+    let issue = fixup_issue_range issue in
     h.eh_add_one issue;
     if issue.issue_level <> EInfo then begin
       Options.abort_counter := !Options.abort_counter - 1;
@@ -274,6 +309,16 @@ let get_ctx () : list string =
 let diag r msg =
   if Options.debug_any()
   then add_one (mk_issue EInfo (Some r) msg None [])
+
+let diag0 msg =
+  if Options.debug_any()
+  then add_one (mk_issue EInfo None msg None [])
+
+let diag1 f a         = diag0 (BU.format1 f a)
+let diag2 f a b       = diag0 (BU.format2 f a b)
+let diag3 f a b c     = diag0 (BU.format3 f a b c)
+let diag4 f a b c d   = diag0 (BU.format4 f a b c d)
+let diag5 f a b c d e = diag0 (BU.format5 f a b c d e)
 
 let warn_unsafe_options rng_opt msg =
   match Options.report_assumes () with
@@ -470,14 +515,24 @@ let catch_errors_aux (f : unit -> 'a) : list issue & list issue & option 'a =
   let newh = mk_default_handler false in
   let old = !current_handler in
   current_handler := newh;
-  let r = try Some (f ())
-          with | ex -> err_exn ex; None
+  let finally_restore () =
+    let all_issues = newh.eh_report() in //de-duplicated already
+    current_handler := old;
+    let errs, rest = List.partition (fun i -> i.issue_level = EError) all_issues in
+    errs, rest
   in
-  let all_issues = newh.eh_report() in //de-duplicated already
-  current_handler := old;
-  let errs, rest = List.partition (fun i -> i.issue_level = EError) all_issues in
+  let r = try Some (f ())
+          with
+          | ex when handleable ex ->
+            err_exn ex;
+            None
+          | ex ->
+            let _ = finally_restore() in
+            raise ex
+  in
+  let errs, rest = finally_restore() in
   errs, rest, r
-
+ 
 let no_ctx (f : unit -> 'a) : 'a =
   let save = error_context.get () in
   error_context.clear ();

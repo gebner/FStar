@@ -65,7 +65,7 @@ boot:
 	$(call msg, "DUNE BUILD")
 	$(Q)cd $(DUNE_SNAPSHOT) && dune build --profile release
 	$(call msg, "RAW INSTALL")
-	$(Q)cp ocaml/_build/default/fstar/main.exe $(FSTAR_CURDIR)/bin/fstar.exe
+	$(Q)install ocaml/_build/default/fstar/main.exe $(FSTAR_CURDIR)/bin/fstar.exe
 
 .PHONY: install
 install:
@@ -130,26 +130,43 @@ bench:
 output:
 	+$(Q)$(MAKE) -C tests/error-messages accept
 	+$(Q)$(MAKE) -C tests/ide/emacs accept
+	+$(Q)$(MAKE) -C tests/ide/lsp accept
 	+$(Q)$(MAKE) -C tests/bug-reports output-accept
 
+# This rule is meant to mimic what the docker based CI does, but it
+# is not perfect. In particular it will not look for a diff on the
+# snapshot, nor run the build-standalone script.
 .PHONY: ci
 ci:
-	+$(Q)FSTAR_HOME=$(CURDIR) $(MAKE) ci-pre
-	+$(Q)FSTAR_HOME=$(CURDIR) $(MAKE) ci-post
+	+$(Q)OTHERFLAGS="--use_hints" FSTAR_HOME=$(CURDIR) $(MAKE) ci-pre
+	+$(Q)OTHERFLAGS="--use_hints" FSTAR_HOME=$(CURDIR) $(MAKE) ci-post
 
+# This rule runs a CI job in a local container, exactly like is done for
+# CI.
 .PHONY: docker-ci
 docker-ci:
-	docker build -f .docker/standalone.Dockerfile --build-arg CI_THREADS=$(shell nproc) .
+	docker build -f .docker/standalone.Dockerfile \
+		--build-arg CI_THREADS=$(shell nproc) \
+		--build-arg FSTAR_CI_NO_GITDIFF=1 \
+		.
 
 .PHONY: ci-pre
-ci-pre:
+ci-pre: ci-rebootstrap
+
+.PHONY: ci-rebootstrap
+ci-rebootstrap:
 	+$(Q)$(MAKE) full-bootstrap FSTAR_BUILD_PROFILE=test
+
+.PHONY: ci-ocaml-test
+ci-ocaml-test:
 	+$(Q)$(MAKE) -C src ocaml-unit-tests
-	+$(Q)$(MAKE) -C ulib ulib-in-fsharp    #build ulibfs
+
+.PHONY: ci-ulib-in-fsharp
+ci-ulib-in-fsharp:
+	+$(Q)$(MAKE) -C ulib ulib-in-fsharp
 
 .PHONY: ci-post
-ci-post: ci-uregressions
-	+if [ -n "${FSTAR_CI_UREGRESSIONS_ULONG}" ]; then $(MAKE) ci-uregressions-ulong; fi
+ci-post: ci-ulib-in-fsharp ci-ocaml-test ci-uregressions
 
 .PHONY: ci-uregressions
 ci-uregressions:

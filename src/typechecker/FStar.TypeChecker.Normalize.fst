@@ -597,7 +597,7 @@ let closure_as_term cfg env t = non_tail_inline_closure_env cfg env t
 let unembed_binder_knot : ref (option (EMB.embedding binder)) = BU.mk_ref None
 let unembed_binder (t : term) : option S.binder =
     match !unembed_binder_knot with
-    | Some e -> EMB.unembed e t false EMB.id_norm_cb
+    | Some e -> EMB.try_unembed e t EMB.id_norm_cb
     | None ->
         Errors.log_issue t.pos (Errors.Warning_UnembedBinderKnot, "unembed_binder_knot is unset!");
         None
@@ -1011,6 +1011,7 @@ let should_unfold cfg should_reify fv qninfo : should_unfold_res =
         failwith <| BU.format1 "Unexpected unfolding result: %s" (string_of_res res)
     in
     if cfg.steps.unfold_tac                             // If running a tactic,
+       && not (Options.no_plugins ())                   // haven't explicitly disabled plugins
        && (r <> Should_unfold_no)                       // actually unfolding this fvar
        && BU.for_some (U.is_fvar PC.plugin_attr) attrs  // it is a plugin
        && !plugin_unfold_warn_ctr > 0                   // and we haven't raised too many warnings
@@ -3531,7 +3532,7 @@ let maybe_unfold_head_fv (env:Env.env) (head:term)
       match (SS.compress head).n with
       | Tm_uinst ({n=Tm_fvar fv}, us) -> Some (fv, us)
       | Tm_fvar fv -> Some (fv, [])
-      | _ -> failwith "Impossible: maybe_unfold_head_fv is called with a non fvar/uinst"
+      | _ -> None
     in
     match fv_us_opt with
     | None -> None
@@ -3552,9 +3553,12 @@ let rec maybe_unfold_aux (env:Env.env) (t:term) : option term =
   | Tm_uinst _ -> maybe_unfold_head_fv env t
   | _ ->
     let head, args = U.leftmost_head_and_args t in
-    match maybe_unfold_aux env head with
-    | None -> None
-    | Some head -> S.mk_Tm_app head args t.pos |> Some
+    if args = []
+    then maybe_unfold_head_fv env head
+    else
+      match maybe_unfold_aux env head with
+      | None -> None
+      | Some head -> S.mk_Tm_app head args t.pos |> Some
 
 let maybe_unfold_head (env:Env.env) (t:term) : option term =
   BU.map_option

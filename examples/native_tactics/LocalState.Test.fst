@@ -14,7 +14,7 @@
    limitations under the License.
 *)
 module LocalState.Test
-open FStar.Tactics
+open FStar.Tactics.V2
 open LocalState
 
 let test () = assert (hasEq nat) by (t1 ())

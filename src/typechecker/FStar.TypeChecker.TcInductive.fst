@@ -505,7 +505,8 @@ let optimized_haseq_scheme (sig_bndle:sigelt) (tcs:list sigelt) (datas:list sige
             sigrng = Range.dummyRange;
             sigmeta = default_sigmeta;
             sigattrs = [];
-            sigopts = None; } ]
+            sigopts = None;
+            sigopens_and_abbrevs = []; } ]
   ) [] axioms in
 
   env.solver.pop "haseq";
@@ -648,7 +649,9 @@ let unoptimized_haseq_scheme (sig_bndle:sigelt) (tcs:list sigelt) (datas:list si
               sigrng = Range.dummyRange;
               sigmeta = default_sigmeta;
               sigattrs = [];
-              sigopts = None; }
+              sigopts = None;
+              sigopens_and_abbrevs = [];
+               }
 
   in
   [se]
@@ -856,7 +859,8 @@ let check_inductive_well_typedness (env:env_t) (ses:list sigelt) (quals:list qua
                     sigrng = Env.get_range env0;
                     sigmeta = default_sigmeta;
                     sigattrs = List.collect (fun s -> s.sigattrs) ses;
-                    sigopts = None; } in
+                    sigopts = None;
+                    sigopens_and_abbrevs=[] } in
 
   sig_bndle, tcs, datas
 
@@ -950,7 +954,8 @@ let mk_discriminator_and_indexed_projectors iquals                   (* Qualifie
                          sigrng = range_of_lid discriminator_name;
                          sigmeta = default_sigmeta;
                          sigattrs = attrs;
-                         sigopts = None; } in
+                         sigopts = None;
+                         sigopens_and_abbrevs=[] } in
             if Env.debug env (Options.Other "LogTypes")
             then BU.print1 "Declaration of a discriminator %s\n"  (Print.sigelt_to_string decl);
 
@@ -993,7 +998,8 @@ let mk_discriminator_and_indexed_projectors iquals                   (* Qualifie
                              sigrng = p;
                              sigmeta = default_sigmeta;
                              sigattrs = attrs;
-                             sigopts = None; } in
+                             sigopts = None;
+                             sigopens_and_abbrevs=[] } in
                 if Env.debug env (Options.Other "LogTypes")
                 then BU.print1 "Implementation of a discriminator %s\n"  (Print.sigelt_to_string impl);
                 (* TODO : Are there some cases where we don't want one of these ? *)
@@ -1049,7 +1055,8 @@ let mk_discriminator_and_indexed_projectors iquals                   (* Qualifie
                        sigrng = range_of_lid field_name;
                        sigmeta = default_sigmeta;
                        sigattrs = attrs;
-                       sigopts = None; } in
+                       sigopts = None;
+                       sigopens_and_abbrevs=[] } in
           if Env.debug env (Options.Other "LogTypes")
           then BU.print1 "Declaration of a projector %s\n"  (Print.sigelt_to_string decl);
           if only_decl
@@ -1096,12 +1103,23 @@ let mk_discriminator_and_indexed_projectors iquals                   (* Qualifie
                            sigrng = p;
                            sigmeta = default_sigmeta;
                            sigattrs = attrs;
-                           sigopts = None; } in
+                           sigopts = None;
+                           sigopens_and_abbrevs=[] } in
               if Env.debug env (Options.Other "LogTypes")
               then BU.print1 "Implementation of a projector %s\n"  (Print.sigelt_to_string impl);
               if no_decl then [impl] else [decl;impl]) |> List.flatten
     in
-    discriminator_ses @ projectors_ses
+    (* We remove the plugin attribute from these generated definitions.
+    We do not want to pay an embedding/unembedding to use them, and we don't
+    want warning about unfolding something that is a plugin *)
+    let no_plugin (se:sigelt) : sigelt =
+      let not_plugin_attr (t:term) : bool =
+        let h = U.head_of t in
+        not (U.is_fvar C.plugin_attr h)
+      in
+      { se with sigattrs = List.filter not_plugin_attr se.sigattrs }
+    in
+    List.map no_plugin (discriminator_ses @ projectors_ses)
 
 let mk_data_operations iquals attrs env tcs se =
   match se.sigel with

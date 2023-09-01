@@ -4146,9 +4146,15 @@ and solve_t' (problem:tprob) (wl:worklist) : solution =
                 (string_of_bool (Env.is_interpreted wl.tcenv head2));
                 (string_of_bool (no_free_uvars t2))]
          in
-         let equal t1 t2 =
-            (U.eq_tm t1 t2 = U.Equal) ||
-            (let steps = [
+         let equal t1 t2 : bool =
+          (* Try comparing the terms as they are. If we get Equal or NotEqual,
+             we are done. If we get an Unknown, attempt some normalization. *)
+           let r = U.eq_tm t1 t2 in
+           match r with
+           | U.Equal -> true
+           | U.NotEqual -> false
+           | U.Unknown ->
+             let steps = [
                Env.UnfoldUntil delta_constant;
                Env.Primops;
                Env.Beta;
@@ -4157,7 +4163,7 @@ and solve_t' (problem:tprob) (wl:worklist) : solution =
              let env = p_env wl orig in
              let t1 = norm_with_steps "FStar.TypeChecker.Rel.norm_with_steps.2" steps env t1 in
              let t2 = norm_with_steps "FStar.TypeChecker.Rel.norm_with_steps.3" steps env t2 in
-             U.eq_tm t1 t2 = U.Equal)
+             U.eq_tm t1 t2 = U.Equal
          in
          if (Env.is_interpreted wl.tcenv head1 || Env.is_interpreted wl.tcenv head2) //we have something like (+ x1 x2) =?= (- y1 y2)
            && problem.relation = EQ
@@ -5004,20 +5010,19 @@ let discharge_guard' use_env_range_msg env (g:guard_t) (use_smt:bool) : option g
                         () // do nothing
 
                     | NonTrivial goal ->
-                        FStar.Options.push ();
+                      Options.with_saved_options (fun () ->
                         FStar.Options.set opts;
-                        if debug
-                        then Errors.diag (Env.get_range env)
-                                         (BU.format2 "Trying to solve:\n> %s\nWith proof_ns:\n %s\n"
+                        if debug then
+                          Errors.diag (Env.get_range env)
+                                      (BU.format2 "Trying to solve:\n> %s\nWith proof_ns:\n %s\n"
                                                  (Print.term_to_string goal)
                                                  (Env.string_of_proof_ns env));
-                        if debug
-                        then Errors.diag (Env.get_range env)
-                                         (BU.format1 "Before calling solver VC=\n%s\n" (Print.term_to_string goal));
-                        let res = env.solver.solve use_env_range_msg env goal in
-                        FStar.Options.pop ();
-                        res
-                        )
+                        if debug then
+                          Errors.diag (Env.get_range env)
+                                      (BU.format1 "Before calling solver VC=\n%s\n" (Print.term_to_string goal));
+                        env.solver.solve use_env_range_msg env goal
+                      )
+                   )
           in
           Some ret_g
 

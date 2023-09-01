@@ -282,11 +282,12 @@ let on_sub_wp_eff_combinators vfs (wpcs : wp_eff_combinators) : wp_eff_combinato
 let on_sub_layered_eff_combinators vfs (lecs : layered_eff_combinators) : layered_eff_combinators =
   let f_tscheme = f_tscheme vfs in
   {
-    l_repr         = on_tuple2 f_tscheme f_tscheme    lecs.l_repr;
-    l_return       = on_tuple2 f_tscheme f_tscheme    lecs.l_return;
-    l_bind         = on_tuple3 f_tscheme f_tscheme id lecs.l_bind;
-    l_subcomp      = on_tuple3 f_tscheme f_tscheme id lecs.l_subcomp;
-    l_if_then_else = on_tuple3 f_tscheme f_tscheme id lecs.l_if_then_else;
+    l_repr         = on_tuple2  f_tscheme f_tscheme             lecs.l_repr;
+    l_return       = on_tuple2  f_tscheme f_tscheme             lecs.l_return;
+    l_bind         = on_tuple3  f_tscheme f_tscheme id          lecs.l_bind;
+    l_subcomp      = on_tuple3  f_tscheme f_tscheme id          lecs.l_subcomp;
+    l_if_then_else = on_tuple3  f_tscheme f_tscheme id          lecs.l_if_then_else;
+    l_close        = map_option (on_tuple2 f_tscheme f_tscheme) lecs.l_close;
   }
 
 let on_sub_combinators vfs (cbs : eff_combinators) : eff_combinators =
@@ -433,6 +434,7 @@ and on_sub_sigelt vfs (se : sigelt) : sigelt =
     sigmeta  = se.sigmeta;
     sigattrs = map (f_term vfs) se.sigattrs;
     sigopts  = se.sigopts;
+    sigopens_and_abbrevs = se.sigopens_and_abbrevs
   }
 
 // Bottom up. The record is a reference so it can be easily cyclic.

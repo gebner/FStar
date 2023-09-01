@@ -168,19 +168,7 @@ let (run_repl_ld_transactions :
           match uu___ with
           | [] -> st1
           | (_id, (task, _st'))::entries ->
-              ((let uu___3 =
-                  let uu___4 =
-                    let uu___5 =
-                      let uu___6 =
-                        let uu___7 =
-                          FStar_Compiler_Effect.op_Bang
-                            FStar_Interactive_PushHelper.repl_stack in
-                        FStar_Compiler_List.hd uu___7 in
-                      FStar_Pervasives_Native.snd uu___6 in
-                    FStar_Pervasives_Native.fst uu___5 in
-                  task = uu___4 in
-                ());
-               debug "Reverting" task;
+              (debug "Reverting" task;
                (let st' =
                   FStar_Interactive_PushHelper.pop_repl
                     "run_repl_ls_transactions" st1 in
@@ -1545,6 +1533,10 @@ let (run_push_without_deps :
                FStar_TypeChecker_Env.nosynth = flag;
                FStar_TypeChecker_Env.uvar_subtyping =
                  (uu___.FStar_TypeChecker_Env.uvar_subtyping);
+               FStar_TypeChecker_Env.intactics =
+                 (uu___.FStar_TypeChecker_Env.intactics);
+               FStar_TypeChecker_Env.nocoerce =
+                 (uu___.FStar_TypeChecker_Env.nocoerce);
                FStar_TypeChecker_Env.tc_term =
                  (uu___.FStar_TypeChecker_Env.tc_term);
                FStar_TypeChecker_Env.typeof_tot_or_gtot_term =
@@ -2175,7 +2167,8 @@ let run_with_parsed_and_tc_term :
                   FStar_Syntax_Syntax.sigquals = uu___8;
                   FStar_Syntax_Syntax.sigmeta = uu___9;
                   FStar_Syntax_Syntax.sigattrs = uu___10;
-                  FStar_Syntax_Syntax.sigopts = uu___11;_}::[] ->
+                  FStar_Syntax_Syntax.sigopens_and_abbrevs = uu___11;
+                  FStar_Syntax_Syntax.sigopts = uu___12;_}::[] ->
                   FStar_Pervasives_Native.Some (univs, def)
               | uu___ -> FStar_Pervasives_Native.None in
             let parse frag =

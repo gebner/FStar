@@ -19,6 +19,11 @@ module FStar.Errors
 module Range = FStar.Compiler.Range
 include FStar.Errors.Codes
 
+(* This is a fallback to be used if an error is raised/logged
+with a dummy range. It is set by TypeChecker.Tc.process_one_decl to
+the range of the sigelt being checked. *)
+val fallback_range : FStar.Compiler.Effect.ref (option Range.range)
+
 (* Get the error number for a particular code. Useful for creating error
 messages mentioning --warn_error. *)
 val errno : raw_error -> int
@@ -79,6 +84,13 @@ val clear : unit -> unit
 val set_handler : error_handler -> unit
 val get_ctx : unit -> list string
 val diag : Range.range -> string -> unit
+
+val diag0 : string -> unit
+val diag1 : string -> string -> unit
+val diag2 : string -> string -> string -> unit
+val diag3 : string -> string -> string -> string -> unit
+val diag4 : string -> string -> string -> string -> string -> unit
+val diag5 : string -> string -> string -> string -> string -> string -> unit
 
 val set_option_warning_callback_range : ropt:option FStar.Compiler.Range.range -> unit
 val set_parse_warn_error : (string -> list error_setting) -> unit

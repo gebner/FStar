@@ -15,7 +15,7 @@
 *)
 module LocalState
 
-open FStar.Tactics
+open FStar.Tactics.V2
 
 type st1 = {
   x : int;

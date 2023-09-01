@@ -143,6 +143,7 @@ type meta =
   | Deprecated of string
   | RemoveUnusedTypeParameters of list int * FStar.Compiler.Range.range //positional
   | HasValDecl of FStar.Compiler.Range.range //this symbol appears in the interface of a module
+  | CNoInline
 
 // rename
 type metadata = list meta
@@ -165,7 +166,7 @@ type mlexpr' =
 | MLE_CTor   of mlpath * list mlexpr
 | MLE_Seq    of list mlexpr
 | MLE_Tuple  of list mlexpr
-| MLE_Record of list mlsymbol * list (mlsymbol * mlexpr)
+| MLE_Record of list mlsymbol * list (mlsymbol * mlexpr) // path of record type, and fields with values
 | MLE_Proj   of mlexpr * mlpath
 | MLE_If     of mlexpr * mlexpr * option mlexpr
 | MLE_Raise  of mlpath * list mlexpr

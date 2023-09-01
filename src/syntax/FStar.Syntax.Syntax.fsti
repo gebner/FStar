@@ -344,7 +344,8 @@ and letbindings = bool * list letbinding        (* let recs may have more than o
 and subst_ts = list (list subst_elt)            (* A composition of parallel substitutions *)
              * maybe_set_use_range              (* and a maybe range update, Some r, to set the use_range of subterms to r.def_range *)
 and subst_elt =
-   | DB of int * bv                            (* DB i t: replace a bound variable with index i with name bv                 *)
+   | DB of int * bv                            (* DB i bv: replace a bound variable with index i with name bv                 *)
+   | DT of int * term                          (* DT i t: replace a bound variable with index i for term *)
    | NM of bv  * int                           (* NM x i: replace a local name with a bound variable i                       *)
    | NT of bv  * term                          (* NT x t: replace a local name with a term t                                 *)
    | UN of int * universe                      (* UN u v: replace universes variable u with universe term v                  *)
@@ -395,6 +396,7 @@ and lazyinfo = {
 and lazy_kind =
   | BadLazy
   | Lazy_bv
+  | Lazy_namedv
   | Lazy_binder
   | Lazy_optionstate
   | Lazy_fvar
@@ -409,6 +411,7 @@ and lazy_kind =
   | Lazy_universe
   | Lazy_universe_uvar
   | Lazy_issue
+  | Lazy_ident
   | Lazy_tref
 and binding =
   | Binding_var      of bv
@@ -554,6 +557,10 @@ type wp_eff_combinators = {
  *
  * Additionally, bind, subcomp, and if_then_else have a combinator kind,
  *   this is also set to None in desugaring and set during typechecking the effect
+ *
+ * The close combinator is optional
+ *   If it is not provided as part of the effect declaration,
+ *   the typechecker also does not synthesize it (unlike if-then-else and subcomp)
  *)
 type layered_eff_combinators = {
   l_repr         : (tscheme * tscheme);
@@ -561,6 +568,7 @@ type layered_eff_combinators = {
   l_bind         : (tscheme * tscheme * option indexed_effect_combinator_kind);
   l_subcomp      : (tscheme * tscheme * option indexed_effect_combinator_kind);
   l_if_then_else : (tscheme * tscheme * option indexed_effect_combinator_kind);
+  l_close        : option (tscheme * tscheme)
 }
 
 type eff_combinators =
@@ -613,6 +621,14 @@ type sig_metadata = {
     sigmeta_admit:bool; //An internal flag to record that a sigelt's SMT proof should be admitted
                         //Used in DM4Free
 }
+
+
+type open_kind =                                          (* matters only for resolving names with some module qualifier *)
+| Open_module                                             (* only opens the module, not the namespace *)
+| Open_namespace  
+
+type open_module_or_namespace = (lident * open_kind)      (* lident fully qualified name, already resolved. *)
+type module_abbrev = (ident * lident)                     (* module X = A.B.C, where A.B.C is fully qualified and already resolved *)
 
 (*
  * AR: we no longer have Sig_new_effect_for_free
@@ -703,6 +719,7 @@ and sigelt = {
     sigquals: list qualifier;
     sigmeta:  sig_metadata;
     sigattrs: list attribute;
+    sigopens_and_abbrevs: list (either open_module_or_namespace module_abbrev);
     sigopts:  option vconfig; (* Saving the option context where this sigelt was checked in *)
 }
 
@@ -725,8 +742,6 @@ val new_bv_set: unit -> set bv
 val new_id_set: unit -> set ident
 val new_fv_set: unit -> set lident
 val new_universe_names_set: unit -> set univ_name
-
-val eq_binding : binding -> binding -> bool
 
 val mod_name: modul -> lident
 
@@ -847,6 +862,7 @@ val t_real          : term
 val t_float         : term
 val t_char          : term
 val t_range         : term
+val t___range       : term
 val t_vconfig       : term
 val t_norm_step     : term
 val t_term          : term

@@ -34,7 +34,7 @@ val e_direction              : embedding direction
 val e_ctrl_flag              : embedding ctrl_flag
 val e_guard_policy           : embedding guard_policy
 val e_unfold_side            : embedding Core.side
-val e_tot_or_ghost           : embedding tot_or_ghost
+val e_tot_or_ghost           : embedding Core.tot_or_ghost
 val e_tref (#a:Type)         : embedding (tref a)
 
 val e_exn_nbe                : NBETerm.embedding exn
@@ -45,7 +45,7 @@ val e_direction_nbe          : NBETerm.embedding direction
 val e_ctrl_flag_nbe          : NBETerm.embedding ctrl_flag
 val e_guard_policy_nbe       : NBETerm.embedding guard_policy
 val e_unfold_side_nbe        : NBETerm.embedding Core.side
-val e_tot_or_ghost_nbe       : NBETerm.embedding tot_or_ghost
+val e_tot_or_ghost_nbe       : NBETerm.embedding Core.tot_or_ghost
 val e_tref_nbe (#a:Type)     : NBETerm.embedding (tref a)
 
 val unfold_lazy_proofstate   : lazyinfo -> term
